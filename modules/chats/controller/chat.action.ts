@@ -2,7 +2,7 @@
 import { pgPool } from '@/lib/db';
 import { sendChatMessageService, getMessageHistoryService, startConversationService } from '../services/chat.service';
 
-export async function getChatDetailsAction(tId: number, pId: number, sId: number) {
+export async function getChatDetailsAction(tId: number, pId: number, sId: number, userRole: 'teacher' | 'parent') {
   try {
     const convId = await startConversationService(tId, pId, sId);
     const history = await getMessageHistoryService(convId);
@@ -12,19 +12,18 @@ export async function getChatDetailsAction(tId: number, pId: number, sId: number
     let contactInfo = null;
 
     try {
-      // nếu user là parent → lấy teacher
-      const teacherRes = await client.query(
-        `SELECT teacher_id as id, name, 'teacher' as role FROM teacher WHERE teacher_id = $1`,
-        [tId]
-      );
+      const isTeacher = userRole === 'teacher';
 
-      // nếu user là teacher → lấy parent
-      const parentRes = await client.query(
-        `SELECT parent_id as id, name, 'parent' as role FROM parent WHERE parent_id = $1`,
-        [pId]
-      );
+      const query = isTeacher
+        ? `SELECT parent_id as id, name, 'parent' as role FROM parent WHERE parent_id = $1`
+        : `SELECT teacher_id as id, name, 'teacher' as role FROM teacher WHERE teacher_id = $1`;
 
-      contactInfo = teacherRes.rows[0] || parentRes.rows[0] || null;
+      const id = isTeacher ? pId : tId;
+
+      const res = await client.query(query, [id]);
+
+      contactInfo = res.rows[0] || null;
+
     } finally {
       client.release();
     }

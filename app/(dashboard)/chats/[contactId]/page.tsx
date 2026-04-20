@@ -29,10 +29,10 @@ export default function DetailChatPage({ params }: { params: Promise<ChatParams>
     async function initChat() {
       console.log('initChat running with:', { contactId, user });
 
-      const tId = user?.role === 'teacher' ? user.id : contactId;
-      const pId = user?.role === 'parent' ? user.id : contactId;
+      const tId = Number(user.id);
+      const pId = Number(contactId);
 
-      const res = await getChatDetailsAction(Number(tId), Number(pId), 1);
+      const res = await getChatDetailsAction(Number(tId), Number(pId), 1, user.role);
       console.log('getChatDetailsAction result:', res);
 
       if (res.success) {
@@ -95,8 +95,21 @@ export default function DetailChatPage({ params }: { params: Promise<ChatParams>
   return (
     <div className="flex flex-col h-full bg-white font-inherit">
       <div className="p-5 border-b-2 border-emerald-50 bg-white/90 flex items-center gap-4">
-        <div className="w-12 h-12 rounded-full bg-emerald-500 text-white flex items-center justify-center text-xl shadow-md">👤</div>
-        <h3 className="text-lg font-black text-gray-800 italic">{contact?.name}</h3>
+        <div className="w-12 h-12 rounded-full bg-emerald-500 text-white flex items-center justify-center text-xl shadow-md">
+          {contact?.name?.charAt(0) || '👤'}
+        </div>
+
+        <div>
+          <h3 className="text-lg font-black text-gray-800">
+            {contact?.name || 'Đang tải...'}
+          </h3>
+
+          {contact?.role && (
+            <p className="text-xs text-emerald-500 font-bold">
+              {contact.role === 'parent' ? '👨‍👩‍👧 Phụ huynh' : '👨‍🏫 Giáo viên'}
+            </p>
+          )}
+        </div>
       </div>
 
       <div className="flex-1 overflow-y-auto p-6 space-y-4 bg-slate-50/50 custom-scrollbar">
