@@ -3,7 +3,7 @@
 import { useEffect, useState, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 // Nhớ import 2 hàm mới vào đây nhé!
-import { getProfileAction, updateProfileAction, requestOtpAction, changePasswordAction } from '@/modules/profile/controller/profile.action';
+import { getProfileAction, updateProfileAction, changePasswordAction } from '@/modules/profile/controller/profile.action';
 
 export default function ProfilePage() {
   const router = useRouter();
@@ -17,7 +17,7 @@ export default function ProfilePage() {
   // State Form Đổi Pass
   const [isChangingPass, setIsChangingPass] = useState(false);
   const [passMessage, setPassMessage] = useState('');
-  const [isOtpSent, setIsOtpSent] = useState(false);
+
   const formPassRef = useRef<HTMLFormElement>(null);
 
   useEffect(() => {
@@ -49,17 +49,7 @@ export default function ProfilePage() {
     setIsSaving(false);
   };
 
-  // Xử lý Yêu cầu gửi OTP
-  const handleRequestOtp = async () => {
-    setPassMessage('⏳ Đang tạo mã...');
-    const result = await requestOtpAction();
-    if (result.success) {
-      setIsOtpSent(true);
-      setPassMessage(result.message);
-    } else {
-      setPassMessage(result.message);
-    }
-  };
+
 
   // Xử lý Submit Form Đổi Pass
   const handlePasswordSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
@@ -73,7 +63,7 @@ export default function ProfilePage() {
     setPassMessage(result.message);
     if (result.success) {
       formPassRef.current?.reset(); // Xóa trắng ô nhập liệu
-      setIsOtpSent(false); // Reset trạng thái OTP
+
     }
     setIsChangingPass(false);
   };
