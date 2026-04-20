@@ -29,8 +29,13 @@ export default function DetailChatPage({ params }: { params: Promise<ChatParams>
     async function initChat() {
       console.log('initChat running with:', { contactId, user });
 
-      const tId = Number(user.id);
-      const pId = Number(contactId);
+      const tId = user.role === 'teacher'
+        ? Number(user.id)
+        : Number(contactId);
+
+      const pId = user.role === 'parent'
+        ? Number(user.id)
+        : Number(contactId);
 
       const res = await getChatDetailsAction(Number(tId), Number(pId), 1, user.role);
       console.log('getChatDetailsAction result:', res);
