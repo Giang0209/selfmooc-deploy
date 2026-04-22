@@ -15,9 +15,9 @@ const MENUS = {
   ],
   teacher: [
     { name: 'Trang chủ', icon: '🏠', path: '/' },
+    { name: 'Khóa Học', icon: '📚', path: '/courses' },
     { name: 'Lớp Học', icon: '🏫', path: '/classes' },
     { name: 'Lịch Dạy', icon: '📅', path: '/schedule' },
-    { name: 'Khóa Học', icon: '📚', path: '/courses' },
     { name: 'Chấm Bài', icon: '✅', path: '/grading' },
     { name: 'Nhắn tin', icon: '💬', path: '/chats' },
     { name: 'Hồ Sơ', icon: '🪪', path: '/profile' },
