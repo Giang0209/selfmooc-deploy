@@ -2,7 +2,6 @@
 
 import { cookies } from 'next/headers';
 import { getClassesByTeacherDB, createClassDB, removeStudentFromClassDB, getAttendanceListDB } from '../models/class.model';
-import { getMyCoursesAction } from '@/modules/courses/controller/course.action'; // Dùng lại action này để lấy list course cho Dropdown
 
 // Hàm giải mã Token (nhớ import hoặc đưa ra file utils dùng chung)
 function getUserFromToken(token: string) {
@@ -104,12 +103,21 @@ import { getClassAndCourseDocumentsDB } from '../models/class.model';
 export async function getClassMaterialsAction(classId: number) {
   try {
     const pgDocs = await getClassAndCourseDocumentsDB(classId);
-
+    console.log("🔥 DB MATERIALS RAW:", pgDocs);
     return {
       success: true,
       data: pgDocs.map(doc => ({
-        ...doc,
-        storage_url: doc.file_url // Cloudinary
+        document_id: doc.document_id,
+        title: doc.title,
+        description: doc.description,
+        doc_type: doc.doc_type,
+        file_ext: doc.file_ext,
+
+        // 🔥 QUAN TRỌNG: chuẩn hóa URL Cloudinary
+        file_url: doc.file_url || null,
+        cloudinary_id: doc.cloudinary_id || null,
+
+        created_at: doc.created_at
       }))
     };
   } catch (error) {

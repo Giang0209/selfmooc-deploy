@@ -34,6 +34,11 @@ export default function StudentClassDetailPage({ classId }: { classId: number })
     loadData();
   }, [activeTab, classId]);
 
+  //download
+  const handleDownload = (id: number) => {
+    window.open(`/api/download?id=${id}`, '_blank');
+  };
+
   const formatDate = (dateStr: string) => new Intl.DateTimeFormat('vi-VN', { hour: '2-digit', minute: '2-digit', day: '2-digit', month: '2-digit', year: 'numeric' }).format(new Date(dateStr));
 
   //Search
@@ -177,10 +182,20 @@ export default function StudentClassDetailPage({ classId }: { classId: number })
                         </div>
                       </div>
                       <div className="flex gap-2">
-                        {doc.storage_url && doc.storage_url !== '#' && (
+                        {doc.file_url && doc.file_url !== '#' && (
                           <>
-                            <a href={doc.storage_url} target="_blank" rel="noopener noreferrer" className="w-10 h-10 bg-sky-50 text-sky-500 rounded-full flex items-center justify-center hover:bg-sky-500 hover:text-white transition-colors">👁️</a>
-                            <a href={`${doc.storage_url}?download=1`} className="w-10 h-10 bg-emerald-50 text-emerald-500 rounded-full flex items-center justify-center hover:bg-emerald-500 hover:text-white transition-colors">⬇️</a>
+                            <button
+                              onClick={() => window.open(
+                                `https://docs.google.com/gview?url=${encodeURIComponent(doc.file_url)}&embedded=true`,
+                                '_blank'
+                              )}
+                              className="w-10 h-10 bg-sky-50 text-sky-500 rounded-full flex items-center justify-center"
+                            >
+                              👁️
+                            </button>
+                            <button onClick={() => handleDownload(doc.document_id)}>
+                              ⬇️
+                            </button>
                           </>
                         )}
                       </div>

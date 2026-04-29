@@ -68,7 +68,7 @@ export async function enrollStudentByCodeDB(classId: number, studentCode: string
     // Tìm ID học sinh từ mã
     const findStudent = await client.query('SELECT student_id, name FROM student WHERE student_code = $1', [studentCode]);
     if (findStudent.rows.length === 0) throw new Error('Không tìm thấy mã học sinh này!');
-    
+
     const student = findStudent.rows[0];
 
     // Kiểm tra xem đã trong lớp chưa
@@ -77,7 +77,7 @@ export async function enrollStudentByCodeDB(classId: number, studentCode: string
 
     // Thêm vào lớp
     await client.query(
-      'INSERT INTO enrollment (class_id, student_id, status) VALUES ($1, $2, $3)', 
+      'INSERT INTO enrollment (class_id, student_id, status) VALUES ($1, $2, $3)',
       [classId, student.student_id, 'active']
     );
 
@@ -101,19 +101,31 @@ export async function removeStudentFromClassDB(classId: number, studentId: numbe
 export async function getClassAndCourseDocumentsDB(classId: number) {
   const client = await pgPool.connect();
   try {
-    // 1. Tìm xem lớp này thuộc Khóa học nào
-    const courseRes = await client.query('SELECT course_id FROM class WHERE class_id = $1', [classId]);
+    const courseRes = await client.query(
+      'SELECT course_id FROM class WHERE class_id = $1',
+      [classId]
+    );
     const courseId = courseRes.rows[0]?.course_id;
 
-    // 2. Lấy tài liệu: Hoặc của Khóa học, hoặc tải riêng cho Lớp này
-    let query = `
-      SELECT document_id, title, description, doc_type, file_ext, course_id, class_id, created_at
+    const query = `
+      SELECT 
+        document_id,
+        title,
+        description,
+        doc_type,
+        file_ext,
+        file_url,
+        cloudinary_id,
+        course_id,
+        class_id,
+        created_at
       FROM document
       WHERE class_id = $1 ${courseId ? 'OR course_id = $2' : ''}
       ORDER BY created_at DESC
     `;
+
     const params = courseId ? [classId, courseId] : [classId];
-    
+
     const result = await client.query(query, params);
     return result.rows;
   } finally {
@@ -154,7 +166,7 @@ export async function saveBulkAttendanceDB(classId: number, teacherId: number, r
   const client = await pgPool.connect();
   try {
     await client.query('BEGIN'); // Bắt đầu phiên giao dịch
-    
+
     const query = `
       INSERT INTO attendance (class_id, student_id, session_date, status, recorded_by, recorded_at)
       VALUES ($1, $2, CURRENT_DATE, $3, $4, NOW())
@@ -164,12 +176,12 @@ export async function saveBulkAttendanceDB(classId: number, teacherId: number, r
         recorded_by = EXCLUDED.recorded_by, 
         recorded_at = NOW(); -- Cập nhật lại đúng mốc thời gian (giờ:phút) khi bấm Lưu
     `;
-    
+
     // Duyệt qua mảng và lưu từng học sinh
     for (const record of records) {
       await client.query(query, [classId, record.student_id, record.status, teacherId]);
     }
-    
+
     await client.query('COMMIT'); // Chốt sổ
     return true;
   } catch (error) {

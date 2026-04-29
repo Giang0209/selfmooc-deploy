@@ -21,7 +21,7 @@ export async function POST(req: NextRequest) {
             const uploadStream = cloudinary.uploader.upload_stream(
                 {
                     folder: type === 'class' ? 'classes' : 'courses',
-                    resource_type: 'auto', // hỗ trợ pdf, pptx, mp4
+                    resource_type: 'raw', // hỗ trợ pdf, pptx, mp4
                 },
                 (error, result) => {
                     if (error) return reject(error);
