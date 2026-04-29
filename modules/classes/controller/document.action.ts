@@ -98,8 +98,7 @@ export async function deleteClassDocAction(
     documentId: number,
     classId: number
 ) {
-    const cookieStore = await cookies();
-    const token = cookieStore.get('session')?.value;
+    const token = (await cookies()).get('session')?.value;
 
     const user = token ? getUserFromToken(token) : null;
 
@@ -108,13 +107,23 @@ export async function deleteClassDocAction(
     }
 
     try {
-        await deleteClassDocumentService(documentId, user.id);
+        // 👉 service chỉ trả về cloudinaryId
+        const cloudinaryId = await deleteClassDocumentService(documentId, user.id);
+
+        // 👉 xoá file ở đây (action)
+        const { default: cloudinary } = await import('@/lib/cloudinary');
+
+        if (cloudinaryId) {
+            await cloudinary.uploader.destroy(cloudinaryId, {
+                resource_type: "auto"
+            });
+        }
 
         revalidatePath(`/classes/${classId}`);
 
         return {
             success: true,
-            message: 'Đã xoá tài liệu lớp 🗑️'
+            message: 'Đã xoá tài liệu 🗑️'
         };
 
     } catch (err: any) {

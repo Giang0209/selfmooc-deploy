@@ -4,24 +4,23 @@ import {
     deleteDocumentDB
 } from '../models/document.model';
 
-import cloudinary from '@/lib/cloudinary';
-
 
 // =======================
-// 1. GET DOCUMENTS
+// 1. GET
 // =======================
 export async function getClassDocumentsService(classId: number) {
     return await getClassDocumentsDB(classId);
 }
 
+
 // =======================
-// 2. CREATE DOCUMENT
+// 2. CREATE
 // =======================
 export async function createClassDocumentService(
     teacherId: number,
     data: any
 ) {
-    const newDoc = await createClassDocumentDB({
+    return await createClassDocumentDB({
         class_id: data.class_id,
         uploaded_by: teacherId,
         title: data.title,
@@ -33,13 +32,11 @@ export async function createClassDocumentService(
         file_url: data.file_url,
         cloudinary_id: data.cloudinary_id
     });
-
-    return newDoc;
-};
+}
 
 
 // =======================
-// 3. DELETE DOCUMENT
+// 3. DELETE (FIXED)
 // =======================
 export async function deleteClassDocumentService(
     documentId: number,
@@ -51,10 +48,6 @@ export async function deleteClassDocumentService(
         throw new Error("Không có quyền hoặc tài liệu không tồn tại");
     }
 
-    // 🔥 xoá file Cloudinary
-    await cloudinary.uploader.destroy(cloudinaryId, {
-        resource_type: "auto"
-    });
-
-    return true;
+    // 👉 QUAN TRỌNG: trả về ID để action xoá cloudinary
+    return cloudinaryId;
 }
