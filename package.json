@@ -12,6 +12,7 @@
     "autoprefixer": "^10.4.27",
     "bcrypt": "^6.0.0",
     "bcryptjs": "^3.0.3",
+    "cloudinary": "^2.10.0",
     "jose": "^6.2.2",
     "lightningcss": "1.22.1",
     "mongodb": "^7.1.1",
