@@ -184,14 +184,18 @@ export default function ClassMaterialsTab({ classId }: { classId: number }) {
               <div className="flex gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
                 {doc.file_url && doc.file_url !== '#' && (
                   <>
-                    <a href={doc.file_url} target="_blank" rel="noopener noreferrer"
-                      className="w-10 h-10 bg-gray-100 text-sky-500 rounded-full flex items-center justify-center hover:bg-sky-500 hover:text-white transition-all shadow-sm font-bold">
+                    <button
+                      onClick={() =>
+                        window.open(
+                          `https://docs.google.com/gview?url=${encodeURIComponent(doc.file_url)}&embedded=true`,
+                          '_blank'
+                        )
+                      }
+                      className="w-10 h-10 bg-gray-100 text-sky-500 rounded-full flex items-center justify-center hover:bg-sky-500 hover:text-white transition-all shadow-sm font-bold"
+                    >
                       👁️
-                    </a>
-                    <a href={`${doc.file_url}?download=1`}
-                      className="w-10 h-10 bg-gray-100 text-emerald-500 rounded-full flex items-center justify-center hover:bg-emerald-500 hover:text-white transition-all shadow-sm font-bold">
-                      ⬇️
-                    </a>
+                    </button>
+
                   </>
                 )}
 

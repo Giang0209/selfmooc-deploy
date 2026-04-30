@@ -184,49 +184,85 @@ export default function CourseDetailPage() {
 
   const handleCreateQuestion = async (e: React.FormEvent) => {
     e.preventDefault();
+
     if (!qText.trim()) return alert("⚠️ Vui lòng nhập nội dung đề bài!");
 
-    // 🎯 THÊM ĐOẠN CHECK NÀY: Phải có ít nhất 1 đáp án đúng mới cho lưu
     if (qType === 'multiple_choice' && !mcOptions.some(opt => opt.is_correct)) {
-      return alert("⚠️ Bạn chưa chọn đáp án đúng nào cho câu hỏi trắc nghiệm!");
+      return alert("⚠️ Bạn chưa chọn đáp án đúng!");
     }
 
     setIsUploading(true);
 
-    // Gói dữ liệu siêu to khổng lồ vào 1 cục JSON
-    const payload = {
-      question_type: qType,
-      text: qText,
-      chapter: qChapter,
-      difficulty: qDifficulty,
-      options: qType === 'multiple_choice' ? mcOptions : [],
-      correct_answer: qType === 'true_false' ? tfAnswer : null,
-      sample_answer: qType === 'essay' ? 'Giáo viên tự chấm' : null
-    };
+    try {
+      let media: any[] = [];
 
-    const formData = new FormData();
-    formData.append('course_id', courseId.toString());
-    formData.append('payload', JSON.stringify(payload)); // 🎯 Đóng gói gửi đi
+      // =========================
+      // 1. UPLOAD ẢNH (nếu có)
+      // =========================
+      if (questionImage) {
+        const uploadForm = new FormData();
+        uploadForm.append('file', questionImage);
+        uploadForm.append('type', 'question');
 
-    if (questionImage) {
-      formData.append('image', questionImage);
+        const uploadRes = await fetch('/api/upload', {
+          method: 'POST',
+          body: uploadForm
+        });
+
+        const uploadData = await uploadRes.json();
+
+        if (!uploadData.success) {
+          throw new Error("Upload ảnh thất bại");
+        }
+
+        media.push({
+          url: uploadData.fileUrl,
+          file_id: uploadData.cloudinaryId
+        });
+      }
+
+      // =========================
+      // 2. BUILD PAYLOAD
+      // =========================
+      const payload = {
+        question_type: qType,
+        text: qText,
+        chapter: qChapter,
+        difficulty: qDifficulty,
+        options: qType === 'multiple_choice' ? mcOptions : [],
+        correct_answer: qType === 'true_false' ? tfAnswer : null,
+        sample_answer: qType === 'essay' ? 'Giáo viên tự chấm' : null,
+        media // 🎯 QUAN TRỌNG
+      };
+
+      const formData = new FormData();
+      formData.append('course_id', courseId.toString());
+      formData.append('payload', JSON.stringify(payload));
+
+      // =========================
+      // 3. CALL ACTION
+      // =========================
+      const res = await createQuestionAction(formData);
+
+      if (res.success) {
+        setQText('');
+        setMcOptions([
+          { label: 'A', text: '', is_correct: true },
+          { label: 'B', text: '', is_correct: false },
+          { label: 'C', text: '', is_correct: false },
+          { label: 'D', text: '', is_correct: false },
+        ]);
+        setQuestionImage(null);
+        setImagePreviewUrl(null);
+        loadAllData();
+      } else {
+        alert(res.message);
+      }
+
+    } catch (err: any) {
+      alert("❌ Lỗi: " + err.message);
     }
 
-    const res = await createQuestionAction(formData);
-    if (res.success) {
-      setQText(''); // Reset mỗi text để nhập tiếp cho nhanh
-      setMcOptions([
-        { label: 'A', text: '', is_correct: true },
-        { label: 'B', text: '', is_correct: false },
-        { label: 'C', text: '', is_correct: false },
-        { label: 'D', text: '', is_correct: false },
-      ]);
-      setQuestionImage(null);
-      setImagePreviewUrl(null);
-      loadAllData();
-    } else {
-      alert(res.message);
-    }
     setIsUploading(false);
   };
 
@@ -333,10 +369,18 @@ export default function CourseDetailPage() {
                       </div>
                     </div>
                     <div className="flex gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
-                      {doc.storage_url && doc.storage_url !== '#' && (
+                      {doc.file_url && doc.file_url !== '#' && (
                         <>
-                          <a href={doc.storage_url} target="_blank" rel="noopener noreferrer" className="w-10 h-10 bg-blue-50 text-blue-500 rounded-full flex items-center justify-center hover:bg-blue-500 hover:text-white transition-all shadow-sm">👁️</a>
-                          <a href={`${doc.storage_url}?download=1`} className="w-10 h-10 bg-green-50 text-green-500 rounded-full flex items-center justify-center hover:bg-green-500 hover:text-white transition-all shadow-sm">⬇️</a>
+                          <button
+                            onClick={() => window.open(
+                              `https://docs.google.com/gview?url=${encodeURIComponent(doc.file_url)}&embedded=true`,
+                              '_blank'
+                            )}
+                            className="w-10 h-10 bg-blue-50 text-blue-500 rounded-full flex items-center justify-center"
+                          >
+                            👁️
+                          </button>
+
                         </>
                       )}
                       <button onClick={() => handleDeleteDoc(doc.document_id)} className="w-10 h-10 bg-red-50 text-red-500 rounded-full flex items-center justify-center hover:bg-red-500 hover:text-white transition-all shadow-sm">🗑️</button>
