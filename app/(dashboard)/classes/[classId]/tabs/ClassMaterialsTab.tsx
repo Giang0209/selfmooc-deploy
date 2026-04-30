@@ -287,7 +287,7 @@ export default function ClassMaterialsTab({ classId }: { classId: number }) {
                 >
                   <option value="lecture">📖 Bài giảng</option>
                   <option value="exercise">✍️ Bài tập</option>
-                  <option value="video">🎥 Video</option>
+
                 </select>
               </div>
 

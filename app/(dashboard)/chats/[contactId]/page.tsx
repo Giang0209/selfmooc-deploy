@@ -42,7 +42,12 @@ export default function DetailChatPage({ params }: { params: Promise<ChatParams>
 
       if (res.success) {
         setCurrentConvId(res.convId ?? null);
-        setMessages(res.history ?? []);
+        setMessages(
+          (res.history ?? []).map((m: any) => ({
+            ...m,
+            sender_id: Number(m.sender_id)
+          }))
+        );
         setContact(res.contactInfo);
       }
     }
@@ -52,11 +57,22 @@ export default function DetailChatPage({ params }: { params: Promise<ChatParams>
 
   useEffect(() => {
     if (!currentConvId) return;
+
     socket = io('http://localhost:3001');
-    socket.emit('join_conversation', currentConvId);
+
+    socket.on('connect', () => {
+      console.log('✅ SOCKET CONNECTED:', socket.id);
+
+      socket.emit('join_conversation', currentConvId);
+    });
 
     socket.on('receive_message', (data: any) => {
-      setMessages((prev) => [...prev, data]);
+      console.log('📩 RECEIVE:', data);
+
+      setMessages(prev => [...prev, {
+        ...data,
+        sender_id: Number(data.sender_id)
+      }]);
     });
 
     return () => socket.disconnect();
@@ -67,34 +83,39 @@ export default function DetailChatPage({ params }: { params: Promise<ChatParams>
   }, [messages]);
 
   const handleSend = async () => {
-    // 🎯 KIỂM TRA SOCKET TRƯỚC KHI DÙNG
-    if (!input.trim() || !currentConvId || !socket) {
-      console.warn("Chưa có kết nối socket hoặc nội dung trống!");
+    if (!input.trim()) return;
+
+    if (!socket || !socket.connected) {
+      console.error("❌ SOCKET CHƯA CONNECT");
       return;
     }
 
+    console.log("🚀 SENDING MESSAGE...");
+
     const payload = {
-      tId: user?.role === 'teacher' ? Number(user.id) : Number(contactId),
-      pId: user?.role === 'parent' ? Number(user.id) : Number(contactId),
+      tId: user.role === 'teacher'
+        ? Number(user.id)
+        : Number(contact?.id),
+
+      pId: user.role === 'parent'
+        ? Number(user.id)
+        : Number(contact?.id),
+
       sId: 1,
       content: input,
-      senderRole: user?.role,
+      senderRole: user.role,
       conversationId: currentConvId,
-      sender_id: user?.id,
+      sender_id: String(user.id),
       created_at: new Date().toISOString()
     };
 
-    try {
-      // 1. Phát tin qua Socket (Real-time) - Bây giờ đã an toàn
-      socket.emit('send_message', payload);
+    console.log("📦 PAYLOAD:", payload);
 
-      // 2. Lưu vào MongoDB qua Server Action (Chạy ngầm)
-      await sendMessageAction(payload);
+    socket.emit('send_message', payload);
 
-      setInput('');
-    } catch (err) {
-      console.error("Gửi tin nhắn thất bại:", err);
-    }
+
+
+    setInput('');
   };
 
   return (
@@ -119,8 +140,10 @@ export default function DetailChatPage({ params }: { params: Promise<ChatParams>
 
       <div className="flex-1 overflow-y-auto p-6 space-y-4 bg-slate-50/50 custom-scrollbar">
         {messages.map((m, index) => (
-          <div key={index} className={`flex ${Number(m.sender_id) === Number(user?.id) ? 'justify-end' : 'justify-start'}`}>
-            <div className={`max-w-[70%] p-4 rounded-3xl shadow-sm text-sm font-bold ${Number(m.sender_id) === Number(user?.id)
+          <div key={index} className={`flex ${m.sender_role === user.role &&
+            String(m.sender_id) === String(user.id) ? 'justify-end' : 'justify-start'}`}>
+            <div className={`max-w-[70%] p-4 rounded-3xl shadow-sm text-sm font-bold ${m.sender_role === user.role &&
+              String(m.sender_id) === String(user.id)
               ? 'bg-emerald-500 text-white rounded-tr-none'
               : 'bg-white text-gray-700 border-2 border-emerald-50 rounded-tl-none'
               }`}>

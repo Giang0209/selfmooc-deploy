@@ -1,8 +1,8 @@
 
 
-import { 
-  getParentsByClassDB, 
-  getOrCreateConversationDB 
+import {
+  getParentsByClassDB,
+  getOrCreateConversationDB
 } from '../models/chat.model';
 import { getMongoDb } from '@/lib/db';
 import { ObjectId } from 'mongodb';
@@ -93,10 +93,10 @@ export async function getParentChatListService(parentId: number) {
 export async function startConversationService(tId: number, pId: number, sId: number) {
   const db = await getMongoDb();
   // Đảm bảo dùng đúng tên trường pg_... như trong NoSql.js
-  const filter = { 
-    pg_teacher_id: Number(tId), 
-    pg_parent_id: Number(pId), 
-    pg_student_id: Number(sId) 
+  const filter = {
+    pg_teacher_id: Number(tId),
+    pg_parent_id: Number(pId),
+    pg_student_id: Number(sId)
   };
 
   let conversation = await db.collection('parent_teacher_conversations').findOne(filter);
@@ -138,16 +138,16 @@ export async function sendChatMessageService(data: {
   tId: number, pId: number, sId: number, content: string, senderRole: 'teacher' | 'parent'
 }) {
   const db = await getMongoDb();
-  
+
   // Lấy ID hội thoại
   const convIdStr = await startConversationService(data.tId, data.pId, data.sId);
   const convId = new ObjectId(convIdStr);
 
   const senderId = data.senderRole === 'teacher' ? data.tId : data.pId;
-  
+
   const newMessage = {
     conversation_id: convId, // Phải là ObjectId
-    sender_id: Number(senderId), // Ép về int để khớp Schema
+    sender_id: String(senderId),
     sender_role: data.senderRole,
     content: data.content.trim(),
     created_at: new Date()
@@ -155,7 +155,7 @@ export async function sendChatMessageService(data: {
 
   // Lưu tin nhắn vào Mongo
   const result = await db.collection('parent_teacher_messages').insertOne(newMessage);
-  
+
   // Cập nhật tin nhắn cuối cùng
   await db.collection('parent_teacher_conversations').updateOne(
     { _id: convId },

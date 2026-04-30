@@ -28,7 +28,7 @@ export default function ClassStudentsTab({ classId }: { classId: number }) {
     if (window.confirm(`Bạn có chắc chắn muốn xóa học sinh ${studentName} khỏi lớp không?`)) {
       const res = await removeStudentAction(classId, studentId);
       if (res.success) {
-        setStudents(prev => prev.filter(s => s.student_id !== studentId)); 
+        setStudents(prev => prev.filter(s => s.student_id !== studentId));
       } else {
         alert(res.message);
       }
@@ -39,7 +39,7 @@ export default function ClassStudentsTab({ classId }: { classId: number }) {
     <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 animate-fade-in">
       {/* CỘT TRÁI: FORM THÊM HỌC SINH */}
       <div className="lg:col-span-1 space-y-6">
-        
+
         {/* KHỐI 1: NHẬP THỦ CÔNG */}
         <div className="bg-white rounded-3xl p-6 border-2 border-sky-100 shadow-sm">
           <h2 className="text-lg font-bold text-gray-800 mb-4 flex items-center gap-2"><span>⌨️</span> Nhập mã thủ công</h2>
@@ -52,7 +52,7 @@ export default function ClassStudentsTab({ classId }: { classId: number }) {
             if (res.success) loadStudents();
             setIsAdding(false);
           }} className="space-y-4">
-            <input name="student_code" required placeholder="Nhập MSSV..." className="w-full px-4 py-3 bg-gray-50 border-2 border-gray-200 rounded-xl text-gray-900 font-bold font-mono uppercase focus:border-sky-500 outline-none transition-colors" />
+            <input name="student_code" required placeholder="Nhập Mã số học sinh ..." className="w-full px-4 py-3 bg-gray-50 border-2 border-gray-200 rounded-xl text-gray-900 font-bold font-mono uppercase focus:border-sky-500 outline-none transition-colors" />
             <button type="submit" disabled={isAdding} className="w-full py-3 bg-gray-800 text-white font-bold rounded-xl hover:bg-gray-700 transition-all disabled:opacity-50">THÊM NHANH</button>
           </form>
         </div>
@@ -60,8 +60,8 @@ export default function ClassStudentsTab({ classId }: { classId: number }) {
         {/* KHỐI 2: IMPORT EXCEL */}
         <div className="bg-white rounded-3xl p-6 border-2 border-purple-100 shadow-sm">
           <h2 className="text-lg font-bold text-gray-800 mb-2 flex items-center gap-2"><span>📊</span> Import Excel</h2>
-          <p className="text-[10px] text-gray-400 mb-4 uppercase font-black">File cần có cột: MSSV, HoTen</p>
-          
+          <p className="text-[10px] text-gray-400 mb-4 uppercase font-black">File cần có cột: MaSoHocSinh, HoTen</p>
+
           <form onSubmit={async (e) => {
             e.preventDefault();
             setIsAdding(true);
@@ -70,15 +70,15 @@ export default function ClassStudentsTab({ classId }: { classId: number }) {
             setMessage(res.message);
             if (res.success) {
               loadStudents();
-              setSelectedExcel(null); 
-              (e.target as HTMLFormElement).reset(); 
+              setSelectedExcel(null);
+              (e.target as HTMLFormElement).reset();
             }
             setIsAdding(false);
           }} className="space-y-4">
-            
+
             <div className={`relative border-2 border-dashed rounded-2xl p-4 text-center transition-all bg-gray-50 ${selectedExcel ? 'border-emerald-400 bg-emerald-50' : 'border-gray-300 hover:border-purple-400'}`}>
-              <input 
-                type="file" name="file" accept=".xlsx, .xls" required 
+              <input
+                type="file" name="file" accept=".xlsx, .xls" required
                 className="absolute inset-0 z-10 w-full h-full opacity-0 cursor-pointer"
                 onChange={(e) => setSelectedExcel(e.target.files && e.target.files.length > 0 ? e.target.files[0] : null)}
               />

@@ -19,9 +19,15 @@ io.on("connection", (socket) => {
 
   // 2. Nhận tin và phát đi cho người còn lại trong phòng
   socket.on("send_message", (data) => {
-    console.log("📩 Nhận tin mới:", data);
-    // Gửi cho tất cả mọi người TRONG PHÒNG đó (bao gồm cả người gửi)
-    io.to(data.conversationId).emit("receive_message", data);
+    const message = {
+      conversation_id: data.conversationId,
+      content: data.content,
+      sender_id: String(data.sender_id),
+      sender_role: String(data.senderRole),
+      created_at: new Date().toISOString()
+    };
+
+    io.to(data.conversationId).emit("receive_message", message);
   });
 
   socket.on("disconnect", () => {
