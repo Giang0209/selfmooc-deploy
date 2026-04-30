@@ -29,4 +29,7 @@ io.on("connection", (socket) => {
   });
 });
 
-console.log("🚀 Socket Server đang chạy tại port 3001...");
+const PORT = process.env.PORT || 4000;
+io.listen(PORT);
+
+console.log("🚀 Socket running on port", PORT);
