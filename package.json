@@ -45,5 +45,21 @@
   },
   "optionalDependencies": {
     "lightningcss-win32-x64-msvc": "^1.32.0"
-  }
+  },
+  "description": "This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).",
+  "main": "socket-server.js",
+  "directories": {
+    "lib": "lib"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Giang0209/selfmooc-deploy.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/Giang0209/selfmooc-deploy/issues"
+  },
+  "homepage": "https://github.com/Giang0209/selfmooc-deploy#readme"
 }

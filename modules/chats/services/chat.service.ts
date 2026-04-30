@@ -147,7 +147,7 @@ export async function sendChatMessageService(data: {
 
   const newMessage = {
     conversation_id: convId, // Phải là ObjectId
-    sender_id: String(senderId),
+    sender_id: Number(senderId), // Ép về int để khớp Schema
     sender_role: data.senderRole,
     content: data.content.trim(),
     created_at: new Date()

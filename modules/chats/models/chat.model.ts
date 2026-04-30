@@ -22,14 +22,14 @@ export async function getParentsByClassDB(classId: number) {
 // 2. Lấy hoặc tạo mới cuộc hội thoại trong MongoDB
 export async function getOrCreateConversationDB(tId: number, pId: number, sId: number) {
   const db = await getMongoDb();
-  const filter = { 
-    pg_teacher_id: Number(tId), 
-    pg_parent_id: Number(pId), 
-    pg_student_id: Number(sId) 
+  const filter = {
+    pg_teacher_id: Number(tId),
+    pg_parent_id: Number(pId),
+    pg_student_id: Number(sId)
   };
 
   let conv = await db.collection('parent_teacher_conversations').findOne(filter);
-  
+
   if (!conv) {
     const result = await db.collection('parent_teacher_conversations').insertOne({
       ...filter,
