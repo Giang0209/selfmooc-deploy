@@ -97,38 +97,7 @@ export async function addStudentToClassAction(formData: FormData) {
   }
 }
 
-import { getClassAndCourseDocumentsDB } from '../models/class.model';
-import { getMongoDb } from '@/lib/db'; // Nhớ check lại đường dẫn file kết nối DB của bạn
 
-// Lấy danh sách Học liệu hiển thị ra Tab 4
-export async function getClassMaterialsAction(classId: number) {
-  try {
-    // 1. Lấy thông tin cơ bản từ Postgres
-    const pgDocs = await getClassAndCourseDocumentsDB(classId);
-    if (pgDocs.length === 0) return { success: true, data: [] };
-
-    // 2. Sang Mongo lấy Link URL dựa vào pg_document_id
-    const pgDocIds = pgDocs.map(d => d.document_id);
-    const db = await getMongoDb();
-    const mongoDocs = await db.collection('document_content')
-      .find({ pg_document_id: { $in: pgDocIds } })
-      .toArray();
-
-    // 3. Hợp nhất dữ liệu
-    const mergedDocs = pgDocs.map(pgDoc => {
-      const mongoDoc = mongoDocs.find(m => m.pg_document_id === pgDoc.document_id);
-      return {
-        ...pgDoc,
-        storage_url: mongoDoc?.storage_url || '#'
-      };
-    });
-
-    return { success: true, data: mergedDocs };
-  } catch (error) {
-    console.error(error);
-    return { success: false, data: [] };
-  }
-}
 
 import { saveBulkAttendanceDB, getAttendanceHistoryDB } from '../models/class.model';
 
@@ -165,11 +134,11 @@ export async function getAttendanceHistoryAction(classId: number) {
 
     // Thuật toán Gom nhóm dữ liệu theo ngày (session_date)
     const groupedData: Record<string, any[]> = {};
-    
+
     rawData.forEach(row => {
       // Chuyển đổi định dạng ngày thành chuỗi DD/MM/YYYY
       const dateStr = new Date(row.session_date).toLocaleDateString('vi-VN');
-      
+
       if (!groupedData[dateStr]) {
         groupedData[dateStr] = [];
       }

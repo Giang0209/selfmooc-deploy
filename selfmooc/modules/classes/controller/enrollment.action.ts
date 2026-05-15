@@ -27,13 +27,14 @@ export async function addStudentsToClassAction(classId: number, type: 'manual' |
 
     let successCount = 0;
     for (const row of studentsToProcess) {
-      const code = clean(row['MSSV'] || row['student_code']);
+      const code = clean(row['MaSoHocSinh'] || row['student_code']);
       const name = clean(row['HoTen'] || row['name']) || 'Học sinh mới';
 
       if (!code) continue;
 
-      const passHash = await bcrypt.hash(code, 10);
-      
+      const defaultPassword = '123456';
+      const passHash = await bcrypt.hash(defaultPassword, 10);
+
       const studentRes = await client.query(`
         INSERT INTO student (student_code, name, password_hash)
         VALUES ($1, $2, $3)

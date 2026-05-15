@@ -41,7 +41,7 @@ export default function CourseDetailPage() {
     { label: 'C', text: '', is_correct: false },
     { label: 'D', text: '', is_correct: false },
   ]);
-  
+
   // State linh hoạt cho Đúng/Sai
   const [tfAnswer, setTfAnswer] = useState(true);
 
@@ -55,8 +55,11 @@ export default function CourseDetailPage() {
       getCourseDocsAction(courseId),
       getCourseQuestionsAction(courseId)
     ]);
-    
-    if (docsRes.success) setDocuments(docsRes.data);
+
+    if (docsRes.success) {
+      setDocuments(docsRes.data);
+      setFilteredDocuments(docsRes.data);
+    }
     if (questsRes.success) setQuestions(questsRes.data);
     setIsLoading(false);
   };
@@ -76,11 +79,11 @@ export default function CourseDetailPage() {
     e.preventDefault();
     if (!selectedFile) return alert("⚠️ Vui lòng chọn file!");
     setIsUploading(true);
-    
+
     const formData = new FormData(e.currentTarget);
     formData.append('course_id', courseId.toString());
-    formData.append('file', selectedFile); 
-    
+    formData.append('file', selectedFile);
+
     const ext = selectedFile.name.split('.').pop()?.toLowerCase() || 'unknown';
     const sizeKb = Math.round(selectedFile.size / 1024);
     formData.append('file_ext', ext);
@@ -89,8 +92,8 @@ export default function CourseDetailPage() {
     const result = await createCourseDocAction(formData);
     if (result.success) {
       (e.target as HTMLFormElement).reset();
-      setSelectedFile(null); 
-      loadAllData();       
+      setSelectedFile(null);
+      loadAllData();
     } else {
       alert(result.message);
     }
@@ -131,16 +134,16 @@ export default function CourseDetailPage() {
   const handleRemoveOption = (index: number) => {
     if (mcOptions.length <= 2) return alert("⚠️ Trắc nghiệm phải có ít nhất 2 đáp án!");
     const newOpts = mcOptions.filter((_, i) => i !== index).map((opt, i) => ({
-      ...opt, 
+      ...opt,
       label: 'ABCDEFGHIJKLMNOPQRSTUVWXYZ'[i] || '?'
     }));
     setMcOptions(newOpts);
   };
 
-const handleCreateQuestion = async (e: React.FormEvent) => {
+  const handleCreateQuestion = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!qText.trim()) return alert("⚠️ Vui lòng nhập nội dung đề bài!");
-    
+
     // 🎯 THÊM ĐOẠN CHECK NÀY: Phải có ít nhất 1 đáp án đúng mới cho lưu
     if (qType === 'multiple_choice' && !mcOptions.some(opt => opt.is_correct)) {
       return alert("⚠️ Bạn chưa chọn đáp án đúng nào cho câu hỏi trắc nghiệm!");
@@ -164,7 +167,7 @@ const handleCreateQuestion = async (e: React.FormEvent) => {
     formData.append('payload', JSON.stringify(payload)); // 🎯 Đóng gói gửi đi
 
     if (questionImage) {
-        formData.append('image', questionImage);
+      formData.append('image', questionImage);
     }
 
     const res = await createQuestionAction(formData);
@@ -192,6 +195,16 @@ const handleCreateQuestion = async (e: React.FormEvent) => {
     }
   };
 
+  //Search
+  const [searchDoc, setSearchDoc] = useState('');
+  const [filteredDocuments, setFilteredDocuments] = useState<any[]>([]);
+  useEffect(() => {
+    const filtered = documents.filter(doc =>
+      doc.title?.toLowerCase().includes(searchDoc.toLowerCase())
+    );
+    setFilteredDocuments(filtered);
+  }, [searchDoc, documents]);
+
 
   return (
     <div className="max-w-6xl mx-auto pb-10">
@@ -210,18 +223,29 @@ const handleCreateQuestion = async (e: React.FormEvent) => {
       </div>
 
       <div className="flex gap-4 mb-8 border-b-2 border-gray-100 pb-2 overflow-x-auto">
-        <button 
+        <button
           onClick={() => setActiveTab('documents')}
           className={`px-6 py-3 font-bold rounded-2xl transition-all ${activeTab === 'documents' ? 'bg-blue-500 text-white shadow-[0_4px_0_rgb(37,99,235)]' : 'bg-gray-50 text-gray-600 hover:bg-blue-50'}`}
         >
           📄 Kho Tài Liệu
         </button>
-        <button 
+        <button
           onClick={() => setActiveTab('questions')}
           className={`px-6 py-3 font-bold rounded-2xl transition-all ${activeTab === 'questions' ? 'bg-purple-500 text-white shadow-[0_4px_0_rgb(147,51,234)]' : 'bg-gray-50 text-gray-600 hover:bg-purple-50'}`}
         >
           ❓ Ngân Hàng Câu Hỏi
         </button>
+      </div>
+
+
+      <div className="mb-4">
+        <input
+          type="text"
+          value={searchDoc}
+          onChange={(e) => setSearchDoc(e.target.value)}
+          placeholder="🔍 Tìm tài liệu..."
+          className="w-full px-4 py-3 border-2 rounded-xl focus:border-blue-500 outline-none"
+        />
       </div>
 
       {/* ======================================================== */}
@@ -281,7 +305,7 @@ const handleCreateQuestion = async (e: React.FormEvent) => {
               </div>
             ) : (
               <div className="space-y-4">
-                {documents.map((doc) => (
+                {filteredDocuments.map((doc) => (
                   <div key={doc.document_id} className="bg-white p-5 rounded-2xl border-2 border-gray-100 flex items-center justify-between hover:border-blue-300 transition-colors group">
                     <div className="flex items-center gap-4">
                       <div className="w-12 h-12 bg-rose-100 text-rose-600 rounded-xl flex items-center justify-center text-xl font-bold uppercase">{doc.doc_type === 'video' ? '🎥' : doc.file_ext}</div>
@@ -311,7 +335,7 @@ const handleCreateQuestion = async (e: React.FormEvent) => {
       {/* ======================================================== */}
       {activeTab === 'questions' && (
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 animate-fade-in">
-          
+
           {/* CỘT TRÁI: FORM BIẾN HÌNH */}
           <div className="lg:col-span-1">
             <div className="bg-white p-6 rounded-3xl shadow-sm border-2 border-purple-100 sticky top-8">
@@ -319,7 +343,7 @@ const handleCreateQuestion = async (e: React.FormEvent) => {
                 <span>📝</span> Thêm câu hỏi
               </h2>
               <form onSubmit={handleCreateQuestion} className="space-y-4">
-                
+
                 {/* Chọn loại câu hỏi */}
                 <div>
                   <label className="block text-sm font-bold text-gray-700 mb-1">Loại câu hỏi</label>
@@ -332,18 +356,18 @@ const handleCreateQuestion = async (e: React.FormEvent) => {
                 {/* 🎯 Ô CHỌN ẢNH MINH HỌA (MỚI) */}
                 <div>
                   <label className="block text-sm font-bold text-gray-700 mb-1">Ảnh minh họa (nếu có)</label>
-                  <div 
+                  <div
                     onClick={() => qImageInputRef.current?.click()}
                     className={`w-full h-24 border-2 border-dashed rounded-xl flex flex-col items-center justify-center cursor-pointer transition-colors ${imagePreviewUrl ? 'border-purple-300 bg-purple-50' : 'border-gray-300 hover:bg-gray-50'}`}
                   >
-                    <input 
-                      type="file" ref={qImageInputRef} accept="image/*" className="hidden" 
+                    <input
+                      type="file" ref={qImageInputRef} accept="image/*" className="hidden"
                       onChange={(e) => {
                         if (e.target.files && e.target.files[0]) {
                           const file = e.target.files[0];
                           setQuestionImage(file);
                           // Tạo link preview tạm thời để hiển thị lên màn hình
-                          setImagePreviewUrl(URL.createObjectURL(file)); 
+                          setImagePreviewUrl(URL.createObjectURL(file));
                         }
                       }}
                     />
@@ -378,18 +402,18 @@ const handleCreateQuestion = async (e: React.FormEvent) => {
                         ➕ Thêm đáp án
                       </button>
                     </div>
-                    
+
                     {mcOptions.map((opt, idx) => (
                       <div key={idx} className={`flex items-center gap-2 p-2 border-2 rounded-xl transition-colors ${opt.is_correct ? 'border-green-500 bg-green-50' : 'border-gray-200 bg-white'}`}>
                         {/* ĐỔI THÀNH CHECKBOX ĐỂ CHỌN NHIỀU */}
-                        <input 
-                          type="checkbox" 
-                          checked={opt.is_correct} 
+                        <input
+                          type="checkbox"
+                          checked={opt.is_correct}
                           onChange={() => handleToggleCorrectOption(idx)}
                           className="w-5 h-5 accent-green-600 cursor-pointer rounded"
                         />
                         <span className="font-bold text-gray-500 w-5">{opt.label}.</span>
-                        <input 
+                        <input
                           type="text" value={opt.text} onChange={(e) => handleUpdateOption(idx, e.target.value)}
                           placeholder={`Nhập đáp án ${opt.label}...`}
                           className="flex-1 bg-transparent outline-none text-sm font-medium" required
@@ -417,25 +441,25 @@ const handleCreateQuestion = async (e: React.FormEvent) => {
                 {/* Thông tin phụ */}
                 <div className="flex gap-4">
                   <div className="flex-1">
-                  <label className="block text-sm font-bold text-gray-700 mb-1">Chương học *</label>
-                  <div className="flex items-center border-2 rounded-xl focus-within:border-purple-500 overflow-hidden bg-white transition-colors">
-                    {/* Chữ "Chương" bị đóng đinh ở đây, không ai xóa được */}
-                    <span className="px-4 py-3 bg-gray-100 text-gray-600 font-bold border-r-2">
-                      Chương
-                    </span>
-                    {/* Ô input bị ép kiểu type="number", chỉ nhận số */}
-                    <input 
-                      type="number" 
-                      min="1" 
-                      max="99"
-                      required
-                      value={qChapter} 
-                      onChange={(e) => setQChapter(e.target.value)} 
-                      placeholder="1" 
-                      className="w-full px-4 py-3 outline-none font-bold text-purple-700 bg-transparent" 
-                    />
+                    <label className="block text-sm font-bold text-gray-700 mb-1">Chương học *</label>
+                    <div className="flex items-center border-2 rounded-xl focus-within:border-purple-500 overflow-hidden bg-white transition-colors">
+                      {/* Chữ "Chương" bị đóng đinh ở đây, không ai xóa được */}
+                      <span className="px-4 py-3 bg-gray-100 text-gray-600 font-bold border-r-2">
+                        Chương
+                      </span>
+                      {/* Ô input bị ép kiểu type="number", chỉ nhận số */}
+                      <input
+                        type="number"
+                        min="1"
+                        max="99"
+                        required
+                        value={qChapter}
+                        onChange={(e) => setQChapter(e.target.value)}
+                        placeholder="1"
+                        className="w-full px-4 py-3 outline-none font-bold text-purple-700 bg-transparent"
+                      />
+                    </div>
                   </div>
-                </div>
                   <div className="w-1/3">
                     <label className="block text-sm font-bold text-gray-700 mb-1">Độ khó</label>
                     <select value={qDifficulty} onChange={(e) => setQDifficulty(Number(e.target.value))} className="w-full px-4 py-3 border-2 rounded-xl focus:border-purple-500 outline-none bg-white">
@@ -466,7 +490,7 @@ const handleCreateQuestion = async (e: React.FormEvent) => {
               <div className="space-y-4">
                 {questions.map((q, idx) => (
                   <div key={q.question_id} className="bg-white p-5 rounded-2xl border-2 border-gray-100 hover:border-purple-300 transition-colors group relative">
-                    
+
                     {/* Badge loại câu hỏi */}
                     <div className="absolute top-4 right-4 flex gap-2">
                       <span className="px-2 py-1 bg-gray-100 text-gray-500 text-xs font-bold rounded-lg border">Độ khó: {q.difficulty}</span>
@@ -476,21 +500,21 @@ const handleCreateQuestion = async (e: React.FormEvent) => {
                     </div>
 
                     <div className="pr-32">
-                    {/* Hiển thị ảnh minh họa */}
-                        {q.content?.media && q.content.media.length > 0 && (
-                          <div className="mt-4">
-                            <img 
-                              src={q.content.media[0].url} // 🎯 Phải là .url (chứa /api/files/...)
-                              alt="Minh họa câu hỏi" 
-                              className="max-h-64 rounded-xl border-2 border-purple-100 object-contain bg-gray-50 shadow-sm"
-                                  // Thêm cái này để tránh lỗi cache ảnh cũ
-                              key={q.content.media[0].file_id} 
-                                />
-                          </div>
-                )}
+                      {/* Hiển thị ảnh minh họa */}
+                      {q.content?.media && q.content.media.length > 0 && (
+                        <div className="mt-4">
+                          <img
+                            src={q.content.media[0].url} // 🎯 Phải là .url (chứa /api/files/...)
+                            alt="Minh họa câu hỏi"
+                            className="max-h-64 rounded-xl border-2 border-purple-100 object-contain bg-gray-50 shadow-sm"
+                            // Thêm cái này để tránh lỗi cache ảnh cũ
+                            key={q.content.media[0].file_id}
+                          />
+                        </div>
+                      )}
                       <p className="font-bold text-gray-500 text-sm mb-1">Câu {idx + 1}:</p>
                       <h4 className="font-bold text-gray-800 text-lg whitespace-pre-wrap leading-relaxed">{q.content?.text || 'Lỗi nội dung'}</h4>
-                      
+
                       {/* Trích xuất đáp án để hiển thị nhanh */}
                       {q.question_type === 'multiple_choice' && q.content?.options && (
                         <div className="mt-4 grid grid-cols-2 gap-2">
@@ -502,8 +526,8 @@ const handleCreateQuestion = async (e: React.FormEvent) => {
                         </div>
                       )}
                     </div>
-                    
-                    <button 
+
+                    <button
                       onClick={() => handleDeleteQuestion(q.question_id)}
                       className="absolute bottom-4 right-4 w-10 h-10 bg-red-50 text-red-500 rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 hover:bg-red-500 hover:text-white transition-all shadow-sm"
                       title="Xóa câu hỏi"

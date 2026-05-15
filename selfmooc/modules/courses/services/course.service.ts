@@ -2,7 +2,7 @@ import { getCoursesByTeacherDB, createCourseDB, toggleCoursePublishDB } from '..
 import { getStudentCoursesDB, getParentChildrenCoursesDB } from '../models/course.model';
 import { updateCourseDB, deleteCourseDB } from '../models/course.model';
 // 🎯 ĐÃ IMPORT HÀM LẤY ĐIỂM TỪ MODEL
-import { getStudentClassGradesDB } from '../models/course.model'; 
+import { getStudentClassGradesDB } from '../models/course.model';
 
 export async function getTeacherCoursesService(teacherId: number) {
   return await getCoursesByTeacherDB(teacherId);
@@ -16,7 +16,8 @@ export async function createCourseService(teacherId: number, data: any) {
     if (error.code === '23505') {
       throw new Error('❌ Mã khóa học này đã tồn tại! Vui lòng chọn mã khác.');
     }
-    throw new Error('Lỗi hệ thống khi tạo khóa học');
+    console.error("REAL ERROR:", error);
+    throw error;
   }
 }
 

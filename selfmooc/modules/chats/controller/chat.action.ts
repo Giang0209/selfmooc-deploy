@@ -21,3 +21,23 @@ export async function sendMessageAction(data: any) {
     return { success: false, error: e.message };
   }
 }
+
+import { getTeacherChatListService, getParentChatListService } from '../services/chat.service';
+
+export async function getContactNameAction(role: string, userId: number, contactId: number) {
+  try {
+    const list =
+      role === 'teacher'
+        ? await getTeacherChatListService(userId)
+        : await getParentChatListService(userId);
+
+    const found = list.find((x: any) => Number(x.contact_id) === Number(contactId));
+
+    return {
+      success: true,
+      name: found?.contact_name || 'Unknown'
+    };
+  } catch (e: any) {
+    return { success: false, error: e.message };
+  }
+}

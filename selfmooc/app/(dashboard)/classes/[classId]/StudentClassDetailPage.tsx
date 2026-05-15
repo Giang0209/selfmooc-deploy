@@ -4,13 +4,13 @@ import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { getAnnouncementsAction } from '@/modules/announcements/controller/announcement.action';
 import { getClassAssignmentsAction } from '@/modules/assignments/controller/assignment.action';
-import { getClassMaterialsAction } from '@/modules/classes/controller/class.action';
+import { getClassDocsAction } from '@/modules/classes/controller/document.action';
 import ClassScheduleBadge from '@/app/components/ClassScheduleBadge';
 
 export default function StudentClassDetailPage({ classId }: { classId: number }) {
   const router = useRouter();
   const [activeTab, setActiveTab] = useState<'announcements' | 'assignments' | 'materials'>('announcements');
-  
+
   const [announcements, setAnnouncements] = useState<any[]>([]);
   const [assignments, setAssignments] = useState<any[]>([]);
   const [materials, setMaterials] = useState<any[]>([]);
@@ -26,7 +26,7 @@ export default function StudentClassDetailPage({ classId }: { classId: number })
         const res = await getClassAssignmentsAction(classId);
         if (res.success) setAssignments(res.data);
       } else if (activeTab === 'materials') {
-        const res = await getClassMaterialsAction(classId);
+        const res = await getClassDocsAction(classId);
         if (res.success) setMaterials(res.data);
       }
       setIsLoading(false);
@@ -36,11 +36,20 @@ export default function StudentClassDetailPage({ classId }: { classId: number })
 
   const formatDate = (dateStr: string) => new Intl.DateTimeFormat('vi-VN', { hour: '2-digit', minute: '2-digit', day: '2-digit', month: '2-digit', year: 'numeric' }).format(new Date(dateStr));
 
+  //Search
+  const [search, setSearch] = useState('');
+  const [filteredMaterials, setFilteredMaterials] = useState<any[]>([]);
+
+  useEffect(() => {
+    const filtered = materials.filter(doc =>
+      doc.title?.toLowerCase().includes(search.toLowerCase())
+    );
+    setFilteredMaterials(filtered);
+  }, [search, materials]);
+
   return (
     <div className="max-w-6xl mx-auto pb-10">
-      <button onClick={() => router.back()} className="mb-6 font-bold text-gray-500 hover:text-sky-500 flex items-center gap-2 transition-colors">
-        <span>⬅</span> Quay lại
-      </button>
+
 
       {/* HEADER LỚP HỌC */}
       <div className="bg-gradient-to-r from-blue-500 to-indigo-600 rounded-[3rem] shadow-xl p-10 mb-10 text-white flex items-center gap-6">
@@ -66,16 +75,16 @@ export default function StudentClassDetailPage({ classId }: { classId: number })
       {/* ======================= */}
       {activeTab === 'announcements' && (
         <div className="space-y-6 animate-fade-in">
-          {isLoading ? <div className="text-center font-bold text-gray-400 animate-pulse py-10">Đang tải thông báo...</div> 
-          : announcements.length === 0 ? <div className="bg-white rounded-3xl p-12 text-center border-4 border-dashed border-gray-200"><span className="text-5xl block mb-4">📭</span><p className="font-bold text-gray-500">Chưa có thông báo nào từ Thầy/Cô.</p></div>
-          : announcements.map((ann) => (
-            <div key={ann._id} className="bg-white rounded-3xl p-8 border-4 border-sky-50 shadow-sm relative overflow-hidden">
-              {ann.is_pinned && <div className="absolute top-0 right-0 bg-amber-100 text-amber-600 font-bold px-4 py-1 rounded-bl-2xl text-xs">⭐ QUAN TRỌNG</div>}
-              <h3 className="text-2xl font-bold text-gray-800 mb-2">{ann.title}</h3>
-              <p className="text-sm font-bold text-gray-400 mb-4">🕒 {formatDate(ann.created_at)}</p>
-              <div className="text-gray-600 bg-gray-50 p-5 rounded-2xl whitespace-pre-wrap font-medium">{ann.body}</div>
-            </div>
-          ))}
+          {isLoading ? <div className="text-center font-bold text-gray-400 animate-pulse py-10">Đang tải thông báo...</div>
+            : announcements.length === 0 ? <div className="bg-white rounded-3xl p-12 text-center border-4 border-dashed border-gray-200"><span className="text-5xl block mb-4">📭</span><p className="font-bold text-gray-500">Chưa có thông báo nào từ Thầy/Cô.</p></div>
+              : announcements.map((ann) => (
+                <div key={ann._id} className="bg-white rounded-3xl p-8 border-4 border-sky-50 shadow-sm relative overflow-hidden">
+                  {ann.is_pinned && <div className="absolute top-0 right-0 bg-amber-100 text-amber-600 font-bold px-4 py-1 rounded-bl-2xl text-xs">⭐ QUAN TRỌNG</div>}
+                  <h3 className="text-2xl font-bold text-gray-800 mb-2">{ann.title}</h3>
+                  <p className="text-sm font-bold text-gray-400 mb-4">🕒 {formatDate(ann.created_at)}</p>
+                  <div className="text-gray-600 bg-gray-50 p-5 rounded-2xl whitespace-pre-wrap font-medium">{ann.body}</div>
+                </div>
+              ))}
         </div>
       )}
 
@@ -84,43 +93,44 @@ export default function StudentClassDetailPage({ classId }: { classId: number })
       {/* ======================= */}
       {activeTab === 'assignments' && (
         <div className="animate-fade-in">
-          {isLoading ? <div className="text-center font-bold text-gray-400 animate-pulse py-10">Đang tìm bài tập...</div> 
-          : assignments.length === 0 ? <div className="bg-white rounded-3xl p-12 text-center border-4 border-dashed border-gray-200"><span className="text-5xl block mb-4">🎉</span><p className="font-bold text-gray-500">Tuyệt vời! Hiện tại không có bài tập nào.</p></div>
-          : (
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              {assignments.map((ass) => {
-                // 🎯 Kiểm tra xem học sinh đã hết lượt làm bài chưa
-                const isExhausted = ass.max_attempts && Number(ass.student_attempts) >= ass.max_attempts;
+          {isLoading ? <div className="text-center font-bold text-gray-400 animate-pulse py-10">Đang tìm bài tập...</div>
+            : assignments.length === 0 ? <div className="bg-white rounded-3xl p-12 text-center border-4 border-dashed border-gray-200"><span className="text-5xl block mb-4">🎉</span><p className="font-bold text-gray-500">Tuyệt vời! Hiện tại không có bài tập nào.</p></div>
+              : (
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  {assignments.map((ass) => {
+                    // 🎯 Kiểm tra xem học sinh đã hết lượt làm bài chưa
+                    const isExhausted = ass.max_attempts && Number(ass.student_attempts) >= ass.max_attempts;
 
-                return (
-                <div key={ass.assignment_id} className={`bg-white rounded-3xl p-6 border-4 shadow-sm transition-colors ${isExhausted ? 'border-gray-200 opacity-80' : 'border-amber-50 hover:border-amber-200'}`}>
-                  <div className="flex items-center gap-4 mb-4">
-                    <div className={`w-14 h-14 rounded-2xl flex items-center justify-center text-2xl font-bold ${isExhausted ? 'bg-gray-100 text-gray-400' : 'bg-amber-100 text-amber-500'}`}>📝</div>
-                    <div>
-                      <h3 className="font-bold text-gray-800 text-xl">{ass.title}</h3>
-                      <p className={`text-xs font-bold uppercase ${isExhausted ? 'text-gray-400' : 'text-amber-500'}`}>{ass.assignment_type}</p>
-                    </div>
-                  </div>
-                  
-                  <div className="bg-gray-50 p-4 rounded-2xl text-sm font-bold text-gray-500 space-y-2 mb-6">
-                    <p>⏳ Thời gian: {ass.time_limit_min ? <span className="text-blue-500">{ass.time_limit_min} phút</span> : 'Không giới hạn'}</p>
-                    <p>📅 Hạn chót: {ass.due_date ? <span className="text-rose-500">{new Date(ass.due_date).toLocaleDateString('vi-VN')}</span> : 'Không có'}</p>
-                    {/* 🎯 Hiển thị số lượt làm */}
-                    <p>🔄 Lượt làm: <span className={isExhausted ? "text-rose-500" : "text-sky-500"}>{ass.student_attempts || 0} / {ass.max_attempts || 'Vô hạn'}</span></p>
-                  </div>
-                  
-                  {/* 🎯 Thay đổi giao diện nút bấm nếu đã hết lượt */}
-                  <button 
-                    onClick={() => !isExhausted && router.push(`/assignments/${ass.assignment_id}`)}
-                    disabled={isExhausted}
-                    className={`w-full py-3 font-black rounded-xl transition-all ${isExhausted ? 'bg-gray-200 text-gray-400 cursor-not-allowed' : 'bg-gradient-to-r from-amber-400 to-orange-500 text-white hover:shadow-lg active:scale-95'}`}
-                  >
-                    {isExhausted ? 'ĐÃ HẾT LƯỢT LÀM BÀI' : 'LÀM BÀI NGAY'}
-                  </button>
+                    return (
+                      <div key={ass.assignment_id} className={`bg-white rounded-3xl p-6 border-4 shadow-sm transition-colors ${isExhausted ? 'border-gray-200 opacity-80' : 'border-amber-50 hover:border-amber-200'}`}>
+                        <div className="flex items-center gap-4 mb-4">
+                          <div className={`w-14 h-14 rounded-2xl flex items-center justify-center text-2xl font-bold ${isExhausted ? 'bg-gray-100 text-gray-400' : 'bg-amber-100 text-amber-500'}`}>📝</div>
+                          <div>
+                            <h3 className="font-bold text-gray-800 text-xl">{ass.title}</h3>
+                            <p className={`text-xs font-bold uppercase ${isExhausted ? 'text-gray-400' : 'text-amber-500'}`}>{ass.assignment_type}</p>
+                          </div>
+                        </div>
+
+                        <div className="bg-gray-50 p-4 rounded-2xl text-sm font-bold text-gray-500 space-y-2 mb-6">
+                          <p>⏳ Thời gian: {ass.time_limit_min ? <span className="text-blue-500">{ass.time_limit_min} phút</span> : 'Không giới hạn'}</p>
+                          <p>📅 Hạn chót: {ass.due_date ? <span className="text-rose-500">{new Date(ass.due_date).toLocaleDateString('vi-VN')}</span> : 'Không có'}</p>
+                          {/* 🎯 Hiển thị số lượt làm */}
+                          <p>🔄 Lượt làm: <span className={isExhausted ? "text-rose-500" : "text-sky-500"}>{ass.student_attempts || 0} / {ass.max_attempts || 'Vô hạn'}</span></p>
+                        </div>
+
+                        {/* 🎯 Thay đổi giao diện nút bấm nếu đã hết lượt */}
+                        <button
+                          onClick={() => !isExhausted && router.push(`/assignments/${ass.assignment_id}`)}
+                          disabled={isExhausted}
+                          className={`w-full py-3 font-black rounded-xl transition-all ${isExhausted ? 'bg-gray-200 text-gray-400 cursor-not-allowed' : 'bg-gradient-to-r from-amber-400 to-orange-500 text-white hover:shadow-lg active:scale-95'}`}
+                        >
+                          {isExhausted ? 'ĐÃ HẾT LƯỢT LÀM BÀI' : 'LÀM BÀI NGAY'}
+                        </button>
+                      </div>
+                    )
+                  })}
                 </div>
-              )})}
-            </div>
-          )}
+              )}
         </div>
       )}
 
@@ -129,33 +139,88 @@ export default function StudentClassDetailPage({ classId }: { classId: number })
       {/* ======================= */}
       {activeTab === 'materials' && (
         <div className="animate-fade-in">
-          {isLoading ? <div className="text-center font-bold text-gray-400 animate-pulse py-10">Đang lục tìm sách vở...</div> 
-          : materials.length === 0 ? <div className="bg-white rounded-3xl p-12 text-center border-4 border-dashed border-gray-200"><span className="text-5xl block mb-4">📂</span><p className="font-bold text-gray-500">Chưa có tài liệu nào được đăng.</p></div>
-          : (
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              {materials.map((doc) => (
-                <div key={doc.document_id} className="bg-white rounded-3xl p-6 border-4 border-emerald-50 shadow-sm hover:border-emerald-200 transition-colors flex items-center justify-between group">
-                  <div className="flex items-center gap-4">
-                    <div className="w-14 h-14 bg-emerald-100 text-emerald-500 rounded-2xl flex items-center justify-center text-2xl font-black uppercase">
-                      {doc.doc_type === 'video' ? '🎥' : (doc.file_ext || '📄')}
+          {/* 🔍 SEARCH  */}
+          <div className="mb-4">
+            <input
+              type="text"
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              placeholder="🔍 Tìm tài liệu..."
+              className="w-full px-4 py-3 border-2 rounded-2xl focus:border-emerald-500 outline-none"
+            />
+          </div>
+          {isLoading ? <div className="text-center font-bold text-gray-400 animate-pulse py-10">Đang lục tìm sách vở...</div>
+            : filteredMaterials.length === 0 ? <div className="bg-white rounded-3xl p-12 text-center border-4 border-dashed border-gray-200"><span className="text-5xl block mb-4">📂</span><p className="font-bold text-gray-500">Chưa có tài liệu nào được đăng.</p></div>
+              : (
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+
+                  {filteredMaterials.map((doc) => (
+                    <div
+                      key={doc.document_id}
+                      className="bg-white p-5 rounded-2xl border-2 border-gray-100 flex items-center justify-between hover:border-emerald-300 shadow-sm transition-colors group"
+                    >
+
+                      {/* LEFT */}
+                      <div className="flex items-center gap-4">
+
+                        <div className="w-12 h-12 bg-emerald-50 text-emerald-600 rounded-xl flex items-center justify-center text-xl font-bold uppercase border border-emerald-100">
+                          {doc.doc_type === 'video'
+                            ? '🎥'
+                            : (doc.file_ext || '📄')}
+                        </div>
+
+                        <div>
+                          <h4 className="font-bold text-gray-800 text-lg line-clamp-1">
+                            {doc.title}
+                          </h4>
+
+                          <div className="flex gap-2 mt-1">
+                            <span
+                              className={`text-xs font-mono px-2 py-0.5 rounded font-bold border ${doc.course_id
+                                ? 'text-sky-600 bg-sky-50 border-sky-200'
+                                : 'text-emerald-600 bg-emerald-50 border-emerald-200'
+                                }`}
+                            >
+                              {doc.course_id ? '🌐 Của Khóa Học' : '📌 Của Lớp Này'}
+                            </span>
+                          </div>
+                        </div>
+
+                      </div>
+
+                      {/* RIGHT ACTIONS */}
+                      <div className="flex gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
+
+                        {doc.storage_url && doc.storage_url !== '#' && (
+                          <>
+                            <a
+                              href={doc.storage_url}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="w-10 h-10 bg-gray-100 text-sky-500 rounded-full flex items-center justify-center hover:bg-sky-500 hover:text-white transition-all shadow-sm font-bold"
+                              title="Xem tài liệu"
+                            >
+                              👁️
+                            </a>
+
+                            <a
+                              href={doc.storage_url}
+                              download
+                              className="w-10 h-10 bg-gray-100 text-emerald-500 rounded-full flex items-center justify-center hover:bg-emerald-500 hover:text-white transition-all shadow-sm font-bold"
+                              title="Tải xuống máy"
+                            >
+                              ⬇️
+                            </a>
+                          </>
+                        )}
+
+                      </div>
+
                     </div>
-                    <div>
-                      <h4 className="font-bold text-gray-800 text-lg line-clamp-1">{doc.title}</h4>
-                      <p className="text-xs font-bold text-gray-400 mt-1">Đăng ngày {formatDate(doc.created_at)}</p>
-                    </div>
-                  </div>
-                  <div className="flex gap-2">
-                    {doc.storage_url && doc.storage_url !== '#' && (
-                      <>
-                        <a href={doc.storage_url} target="_blank" rel="noopener noreferrer" className="w-10 h-10 bg-sky-50 text-sky-500 rounded-full flex items-center justify-center hover:bg-sky-500 hover:text-white transition-colors">👁️</a>
-                        <a href={`${doc.storage_url}?download=1`} className="w-10 h-10 bg-emerald-50 text-emerald-500 rounded-full flex items-center justify-center hover:bg-emerald-500 hover:text-white transition-colors">⬇️</a>
-                      </>
-                    )}
-                  </div>
+                  ))}
+
                 </div>
-              ))}
-            </div>
-          )}
+              )}
         </div>
       )}
     </div>
