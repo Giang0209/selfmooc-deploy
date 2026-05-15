@@ -413,10 +413,6 @@ export default function ClassMaterialsTab({
                     📖 Bài giảng
                   </option>
 
-                  <option value="exercise">
-                    ✍️ Bài tập
-                  </option>
-
                   <option value="reference">
                     📚 Tài liệu tham khảo
                   </option>

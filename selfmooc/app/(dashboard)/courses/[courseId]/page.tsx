@@ -284,9 +284,21 @@ export default function CourseDetailPage() {
                 <div>
                   <label className="block text-sm font-bold text-gray-700 mb-1">Loại tài liệu</label>
                   <select name="doc_type" className="w-full px-4 py-3 border-2 rounded-xl focus:border-blue-500 outline-none bg-white">
-                    <option value="lecture">📖 Bài giảng (Lecture)</option>
-                    <option value="exercise">✍️ Bài tập (Exercise)</option>
-                    <option value="video">🎥 Video</option>
+                    <option value="lecture">
+                      📖 Bài giảng
+                    </option>
+
+                    <option value="reference">
+                      📚 Tài liệu tham khảo
+                    </option>
+
+                    <option value="video">
+                      🎥 Video
+                    </option>
+
+                    <option value="other">
+                      📁 Khác
+                    </option>
                   </select>
                 </div>
                 <button type="submit" disabled={isUploading} className="w-full py-3 bg-blue-500 text-white font-bold rounded-xl hover:bg-blue-600 transition-colors disabled:opacity-50">
