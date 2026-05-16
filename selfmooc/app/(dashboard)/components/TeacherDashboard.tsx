@@ -3,10 +3,12 @@
 import { useEffect, useState } from 'react';
 import { getDashboardStatsAction } from '@/modules/classes/controller/dashboard.action';
 import { getMyWeeklyScheduleAction } from '@/modules/classes/controller/schedule.action';
+import { getMyNotificationsAction } from '@/modules/notifications/notification.action';
 
 export default function TeacherDashboard() {
   const [stats, setStats] = useState<any>(null);
   const [schedule, setSchedule] = useState<any[]>([]);
+  const [notifications, setNotifications] = useState<any[]>([]);
 
   useEffect(() => {
     async function fetchData() {
@@ -15,7 +17,11 @@ export default function TeacherDashboard() {
 
       const scheduleRes = await getMyWeeklyScheduleAction();
       if (scheduleRes.success) setSchedule(scheduleRes.data);
+
+      const notifRes = await getMyNotificationsAction();
+      if (notifRes.success) setNotifications(notifRes.data);
     }
+
     fetchData();
   }, []);
 
@@ -23,23 +29,23 @@ export default function TeacherDashboard() {
     <div className="space-y-8">
       {/* STATS CARDS */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-        <StatCard 
-          title="Lớp đang dạy" 
-          value={stats?.total_classes || 0} 
-          icon="🏫" 
-          color="bg-blue-500" 
+        <StatCard
+          title="Lớp đang dạy"
+          value={stats?.total_classes || 0}
+          icon="🏫"
+          color="bg-blue-500"
         />
-        <StatCard 
-          title="Tổng học sinh" 
-          value={stats?.total_students || 0} 
-          icon="👥" 
-          color="bg-purple-500" 
+        <StatCard
+          title="Tổng học sinh"
+          value={stats?.total_students || 0}
+          icon="👥"
+          color="bg-purple-500"
         />
-        <StatCard 
-          title="Bài cần chấm" 
-          value={stats?.pending_grades || 0} 
-          icon="⏳" 
-          color="bg-orange-500" 
+        <StatCard
+          title="Bài cần chấm"
+          value={stats?.pending_grades || 0}
+          icon="⏳"
+          color="bg-orange-500"
         />
       </div>
 
@@ -54,51 +60,68 @@ export default function TeacherDashboard() {
           </div>
           <div style={{ display: 'flex', flexDirection: 'column', gap: '15px' }}>
             {(() => {
-                const today = new Date().getDay();
-                const todaySchedule = schedule.filter(s => s.day_of_week === today);
-                
-                return todaySchedule.length > 0 ? (
-                    todaySchedule.map((item, idx) => (
-                        <div key={idx} style={{ display: 'flex', alignItems: 'center', gap: '15px', padding: '15px', backgroundColor: '#f9f9f9', borderRadius: '25px', border: '1px solid #eee' }}>
-                            <div style={{ width: '60px', textAlign: 'center', fontWeight: '900', color: '#00AEEF' }}>
-                                {item.start_time.slice(0, 5)}
-                            </div>
-                            <div style={{ flex: 1 }}>
-                                <p style={{ margin: 0, fontWeight: '900', color: '#333', textTransform: 'uppercase' }}>{item.class_name}</p>
-                                <p style={{ margin: 0, fontSize: '12px', color: '#999', fontWeight: 'bold' }}>📍 Phòng: {item.room}</p>
-                            </div>
-                            <div style={{ fontSize: '10px', fontWeight: '900', backgroundColor: '#E0F7FF', color: '#00AEEF', padding: '4px 8px', borderRadius: '10px' }}>LIVE</div>
-                        </div>
-                    ))
-                ) : (
-                    <p style={{ color: '#BBB', textAlign: 'center', padding: '40px 0', fontWeight: 'bold' }}>Hôm nay bạn không có lịch dạy nào.</p>
-                );
+              const today = new Date().getDay();
+              const todaySchedule = schedule.filter(s => s.day_of_week === today);
+
+              return todaySchedule.length > 0 ? (
+                todaySchedule.map((item, idx) => (
+                  <div key={idx} style={{ display: 'flex', alignItems: 'center', gap: '15px', padding: '15px', backgroundColor: '#f9f9f9', borderRadius: '25px', border: '1px solid #eee' }}>
+                    <div style={{ width: '60px', textAlign: 'center', fontWeight: '900', color: '#00AEEF' }}>
+                      {item.start_time.slice(0, 5)}
+                    </div>
+                    <div style={{ flex: 1 }}>
+                      <p style={{ margin: 0, fontWeight: '900', color: '#333', textTransform: 'uppercase' }}>{item.class_name}</p>
+                      <p style={{ margin: 0, fontSize: '12px', color: '#999', fontWeight: 'bold' }}>📍 Phòng: {item.room}</p>
+                    </div>
+                    <div style={{ fontSize: '10px', fontWeight: '900', backgroundColor: '#E0F7FF', color: '#00AEEF', padding: '4px 8px', borderRadius: '10px' }}>LIVE</div>
+                  </div>
+                ))
+              ) : (
+                <p style={{ color: '#BBB', textAlign: 'center', padding: '40px 0', fontWeight: 'bold' }}>Hôm nay bạn không có lịch dạy nào.</p>
+              );
             })()}
           </div>
         </div>
 
-        {/* QUICK ACTIONS */}
+        {/* NOTIFICATIONS */}
         <div className="bg-white p-6 rounded-3xl shadow-sm border-b-4 border-purple-100">
-          <h3 className="text-xl font-bold text-gray-800 mb-4 flex items-center gap-2">
-            <span>⚡ Thao tác nhanh</span>
+          <h3 className="text-xl font-bold text-gray-800 mb-5 flex items-center gap-2">
+            <span>📢</span> Thông báo
           </h3>
-          <div className="grid grid-cols-2 gap-4">
-            <button className="p-4 bg-blue-50 text-blue-600 font-bold rounded-2xl hover:bg-blue-100 transition-all flex flex-col items-center gap-2">
-                <span className="text-3xl">📝</span>
-                Tạo Bài Tập
-            </button>
-            <button className="p-4 bg-purple-50 text-purple-600 font-bold rounded-2xl hover:bg-purple-100 transition-all flex flex-col items-center gap-2">
-                <span className="text-3xl">🗂️</span>
-                Thêm Câu Hỏi
-            </button>
-            <button className="p-4 bg-green-50 text-green-600 font-bold rounded-2xl hover:bg-green-100 transition-all flex flex-col items-center gap-2">
-                <span className="text-3xl">📢</span>
-                Thông Báo
-            </button>
-            <button className="p-4 bg-rose-50 text-rose-600 font-bold rounded-2xl hover:bg-rose-100 transition-all flex flex-col items-center gap-2">
-                <span className="text-3xl">📊</span>
-                Xuất Báo Cáo
-            </button>
+
+          <div className="space-y-4 max-h-[420px] overflow-y-auto">
+            {notifications.length === 0 ? (
+              <div className="text-center py-10 text-gray-400 font-bold">
+                <span className="text-4xl block mb-2">📭</span>
+                Chưa có thông báo nào
+              </div>
+            ) : (
+              notifications.slice(0, 5).map((n) => (
+                <div
+                  key={n._id}
+                  className={`p-5 rounded-2xl border transition-all ${!n.is_read
+                      ? 'bg-sky-50 border-sky-100'
+                      : 'bg-gray-50 border-gray-100'
+                    }`}
+                >
+                  <h4
+                    className={`font-bold mb-2 ${!n.is_read ? 'text-gray-800' : 'text-gray-500'
+                      }`}
+                  >
+                    {n.title}
+                  </h4>
+
+                  <p
+                    className={`text-sm line-clamp-2 leading-relaxed ${!n.is_read
+                        ? 'text-gray-600'
+                        : 'text-gray-400'
+                      }`}
+                  >
+                    {n.body}
+                  </p>
+                </div>
+              ))
+            )}
           </div>
         </div>
       </div>

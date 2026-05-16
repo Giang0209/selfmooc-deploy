@@ -78,3 +78,25 @@ export async function getAnnouncementsByClassMongo(classId: number) {
     .sort({ created_at: -1 }) // Mới nhất lên đầu
     .toArray();
 }
+
+// Lấy danh sách phụ huynh của học sinh trong lớp
+export async function getParentsByClassDB(classId: number) {
+  const client = await pgPool.connect();
+
+  try {
+    const query = `
+      SELECT DISTINCT ps.parent_id
+      FROM enrollment e
+      JOIN parent_student ps
+        ON e.student_id = ps.student_id
+      WHERE e.class_id = $1
+        AND e.status = 'active'
+    `;
+
+    const result = await client.query(query, [classId]);
+
+    return result.rows.map(row => row.parent_id);
+  } finally {
+    client.release();
+  }
+}

@@ -3,12 +3,13 @@ import {
   createAnnouncementMongo,
   getEnrolledStudentsDB,
   createNotificationsMongo,
-  getAnnouncementsByClassMongo
+  getAnnouncementsByClassMongo,
+  getParentsByClassDB
 } from '../models/announcement.model';
 
 export async function createClassAnnouncementService(
-  teacherId: number, 
-  classId: number, 
+  teacherId: number,
+  classId: number,
   data: { title: string; body: string; attachments?: any[]; is_pinned?: boolean }
 ) {
   // 1. Kiểm tra giáo viên có quản lý lớp này không

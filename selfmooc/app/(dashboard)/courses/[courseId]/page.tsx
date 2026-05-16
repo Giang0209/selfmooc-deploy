@@ -315,25 +315,72 @@ export default function CourseDetailPage() {
               </div>
             ) : (
               <div className="space-y-4">
-                {filteredDocuments.map((doc) => (
-                  <div key={doc.document_id} className="bg-white p-5 rounded-2xl border-2 border-gray-100 flex items-center justify-between hover:border-blue-300 transition-colors group">
-                    <div className="flex items-center gap-4">
-                      <div className="w-12 h-12 bg-rose-100 text-rose-600 rounded-xl flex items-center justify-center text-xl font-bold uppercase">{doc.doc_type === 'video' ? '🎥' : doc.file_ext}</div>
-                      <div>
-                        <h4 className="font-bold text-gray-800 text-lg">{doc.title}</h4>
+                {filteredDocuments.map((doc) => {
+
+                  const officeExtensions = [
+                    'doc',
+                    'docx',
+                    'ppt',
+                    'pptx'
+                  ];
+
+                  const isOfficeFile =
+                    officeExtensions.includes(
+                      doc.file_ext?.toLowerCase()
+                    );
+
+                  const previewUrl = isOfficeFile
+                    ? `https://view.officeapps.live.com/op/view.aspx?src=${encodeURIComponent(doc.storage_url)}`
+                    : doc.storage_url;
+
+                  return (
+                    <div
+                      key={doc.document_id}
+                      className="bg-white p-5 rounded-2xl border-2 border-gray-100 flex items-center justify-between hover:border-blue-300 transition-colors group"
+                    >
+                      <div className="flex items-center gap-4">
+                        <div className="w-12 h-12 bg-rose-100 text-rose-600 rounded-xl flex items-center justify-center text-xl font-bold uppercase">
+                          {doc.doc_type === 'video' ? '🎥' : doc.file_ext}
+                        </div>
+
+                        <div>
+                          <h4 className="font-bold text-gray-800 text-lg">
+                            {doc.title}
+                          </h4>
+                        </div>
+                      </div>
+
+                      <div className="flex gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                        {doc.storage_url && doc.storage_url !== '#' && (
+                          <>
+                            <a
+                              href={previewUrl}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="w-10 h-10 bg-blue-50 text-blue-500 rounded-full flex items-center justify-center hover:bg-blue-500 hover:text-white transition-all shadow-sm"
+                            >
+                              👁️
+                            </a>
+
+                            <a
+                              href={`${doc.storage_url}?download=1`}
+                              className="w-10 h-10 bg-green-50 text-green-500 rounded-full flex items-center justify-center hover:bg-green-500 hover:text-white transition-all shadow-sm"
+                            >
+                              ⬇️
+                            </a>
+                          </>
+                        )}
+
+                        <button
+                          onClick={() => handleDeleteDoc(doc.document_id)}
+                          className="w-10 h-10 bg-red-50 text-red-500 rounded-full flex items-center justify-center hover:bg-red-500 hover:text-white transition-all shadow-sm"
+                        >
+                          🗑️
+                        </button>
                       </div>
                     </div>
-                    <div className="flex gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
-                      {doc.storage_url && doc.storage_url !== '#' && (
-                        <>
-                          <a href={doc.storage_url} target="_blank" rel="noopener noreferrer" className="w-10 h-10 bg-blue-50 text-blue-500 rounded-full flex items-center justify-center hover:bg-blue-500 hover:text-white transition-all shadow-sm">👁️</a>
-                          <a href={`${doc.storage_url}?download=1`} className="w-10 h-10 bg-green-50 text-green-500 rounded-full flex items-center justify-center hover:bg-green-500 hover:text-white transition-all shadow-sm">⬇️</a>
-                        </>
-                      )}
-                      <button onClick={() => handleDeleteDoc(doc.document_id)} className="w-10 h-10 bg-red-50 text-red-500 rounded-full flex items-center justify-center hover:bg-red-500 hover:text-white transition-all shadow-sm">🗑️</button>
-                    </div>
-                  </div>
-                ))}
+                  );
+                })}
               </div>
             )}
           </div>
