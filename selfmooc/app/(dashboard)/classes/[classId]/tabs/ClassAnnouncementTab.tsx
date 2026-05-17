@@ -90,6 +90,12 @@ export default function ClassAnnouncementTab({ classId }: { classId: number }) {
     setMessage('');
   };
 
+  const [announcementSearch, setAnnouncementSearch] = useState('');
+  const filteredAnnouncements = announcements.filter(ann =>
+    ann.title?.toLowerCase().includes(announcementSearch.toLowerCase()) ||
+    ann.body?.toLowerCase().includes(announcementSearch.toLowerCase())
+  );
+
   return (
     <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 animate-fade-in">
       {/* CỘT TRÁI: FORM */}
@@ -130,37 +136,99 @@ export default function ClassAnnouncementTab({ classId }: { classId: number }) {
         </div>
       </div>
 
+
       {/* CỘT PHẢI: DANH SÁCH */}
-      <div className="lg:col-span-2 space-y-4">
-        {isLoading ? (
-          <div className="text-center py-10 font-bold text-sky-500 animate-pulse">Đang tải thông báo...</div>
-        ) : announcements.length === 0 ? (
-          <div className="bg-gray-50 rounded-3xl p-12 text-center border-2 border-gray-200 border-dashed">
-            <span className="text-5xl mb-4 block grayscale opacity-50">📭</span>
-            <h3 className="text-xl font-bold text-gray-400">Lớp chưa có thông báo nào!</h3>
+      <div className="lg:col-span-2">
+        <div className="bg-white rounded-3xl border-2 border-gray-100 shadow-sm p-6 space-y-6">
+
+          {/* SEARCH */}
+          <div className="w-full">
+            <input
+              value={announcementSearch}
+              onChange={(e) => setAnnouncementSearch(e.target.value)}
+              placeholder="🔍 Tìm thông báo..."
+              className="w-full px-4 py-3 border-2 border-gray-200 rounded-2xl font-bold text-gray-700 focus:border-sky-400 outline-none shadow-sm"
+            />
           </div>
-        ) : (
-          announcements.map((ann) => (
-            <div key={ann._id} className="bg-white rounded-3xl p-6 border-2 border-gray-100 shadow-sm relative overflow-hidden group hover:border-sky-300 transition-colors">
-              {ann.is_pinned && <div className="absolute top-0 right-0 bg-amber-100 text-amber-600 font-bold px-4 py-1 rounded-bl-2xl text-xs border-b border-l border-amber-200">⭐ QUAN TRỌNG</div>}
 
-              <div className="flex gap-4">
-                <div className="w-14 h-14 bg-sky-50 rounded-2xl flex items-center justify-center text-2xl shrink-0 border border-sky-100">🔔</div>
-                <div className="flex-1">
-                  <h3 className="text-xl font-bold text-gray-800 pr-20">{ann.title}</h3>
-                  <p className="text-sm font-bold text-gray-400 mb-3 flex items-center gap-2"><span>🕒</span> {formatDate(ann.created_at)}</p>
-                  <div className="text-gray-700 font-medium bg-gray-50 p-4 rounded-2xl border border-gray-100 whitespace-pre-wrap leading-relaxed">{ann.body}</div>
+          {/* LOADING */}
+          {isLoading ? (
+            <div className="text-center py-10 font-bold text-sky-500 animate-pulse">
+              Đang tải thông báo...
+            </div>
 
-                  {/* NÚT SỬA / XÓA (Hiện khi Hover) */}
-                  <div className="mt-4 pt-4 border-t border-gray-100 flex gap-2 justify-end opacity-0 group-hover:opacity-100 transition-opacity">
-                    <button onClick={() => handleEditClick(ann)} className="px-4 py-2 bg-gray-100 text-gray-600 font-bold rounded-xl hover:bg-amber-500 hover:text-white transition-colors text-sm">✏️ Sửa</button>
-                    <button onClick={() => handleDelete(ann._id)} className="px-4 py-2 bg-gray-100 text-gray-600 font-bold rounded-xl hover:bg-rose-500 hover:text-white transition-colors text-sm">🗑️ Xóa</button>
+          ) : announcements.length === 0 ? (
+
+            /* EMPTY STATE */
+            <div className="bg-gray-50 rounded-3xl p-12 text-center border-2 border-gray-200 border-dashed">
+              <span className="text-5xl mb-4 block grayscale opacity-50">📭</span>
+              <h3 className="text-xl font-bold text-gray-400">
+                Lớp chưa có thông báo nào!
+              </h3>
+            </div>
+
+          ) : (
+
+            /* LIST */
+            <div className="space-y-4">
+              {filteredAnnouncements.map((ann) => (
+                <div
+                  key={ann._id}
+                  className="bg-white rounded-3xl p-6 border-2 border-gray-100 shadow-sm relative overflow-hidden group hover:border-sky-300 transition-colors"
+                >
+                  {/* PIN */}
+                  {ann.is_pinned && (
+                    <div className="absolute top-0 right-0 bg-amber-100 text-amber-600 font-bold px-4 py-1 rounded-bl-2xl text-xs border-b border-l border-amber-200">
+                      ⭐ QUAN TRỌNG
+                    </div>
+                  )}
+
+                  <div className="flex gap-4">
+                    {/* ICON */}
+                    <div className="w-14 h-14 bg-sky-50 rounded-2xl flex items-center justify-center text-2xl shrink-0 border border-sky-100">
+                      🔔
+                    </div>
+
+                    {/* CONTENT */}
+                    <div className="flex-1">
+                      <h3 className="text-xl font-bold text-gray-800 pr-20">
+                        {ann.title}
+                      </h3>
+
+                      <p className="text-sm font-bold text-gray-400 mb-3 flex items-center gap-2">
+                        <span>🕒</span>
+                        {formatDate(ann.created_at)}
+                      </p>
+
+                      <div className="text-gray-700 font-medium bg-gray-50 p-4 rounded-2xl border border-gray-100 whitespace-pre-wrap leading-relaxed">
+                        {ann.body}
+                      </div>
+
+                      {/* ACTIONS */}
+                      <div className="mt-4 pt-4 border-t border-gray-100 flex gap-2 justify-end opacity-0 group-hover:opacity-100 transition-opacity">
+                        <button
+                          onClick={() => handleEditClick(ann)}
+                          className="px-4 py-2 bg-gray-100 text-gray-600 font-bold rounded-xl hover:bg-amber-500 hover:text-white transition-colors text-sm"
+                        >
+                          ✏️ Sửa
+                        </button>
+
+                        <button
+                          onClick={() => handleDelete(ann._id)}
+                          className="px-4 py-2 bg-gray-100 text-gray-600 font-bold rounded-xl hover:bg-rose-500 hover:text-white transition-colors text-sm"
+                        >
+                          🗑️ Xóa
+                        </button>
+                      </div>
+                    </div>
                   </div>
                 </div>
-              </div>
+              ))}
             </div>
-          ))
-        )}
+
+          )}
+
+        </div>
       </div>
     </div>
   );

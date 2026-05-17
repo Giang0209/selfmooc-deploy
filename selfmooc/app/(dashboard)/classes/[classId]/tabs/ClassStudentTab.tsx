@@ -11,6 +11,9 @@ export default function ClassStudentsTab({ classId }: { classId: number }) {
   const [message, setMessage] = useState('');
   const [selectedExcel, setSelectedExcel] = useState<File | null>(null);
 
+  const [search, setSearch] = useState('');
+
+
   // Tự động tải danh sách khi mở Tab
   const loadStudents = async () => {
     setIsLoading(true);
@@ -34,6 +37,16 @@ export default function ClassStudentsTab({ classId }: { classId: number }) {
       }
     }
   };
+
+  const filteredStudents = students
+    .filter((s) => {
+      const keyword = search.toLowerCase();
+      return (
+        s.name?.toLowerCase().includes(keyword) ||
+        s.student_code?.toLowerCase().includes(keyword)
+      );
+    });
+
 
   return (
     <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 animate-fade-in">
@@ -116,11 +129,24 @@ export default function ClassStudentsTab({ classId }: { classId: number }) {
           </div>
         ) : (
           <div className="bg-white rounded-3xl border-2 border-gray-100 shadow-sm overflow-hidden">
+
+            {/* HEADER CONTROL */}
+            <div className="p-4 border-b flex gap-3 items-center">
+
+              {/* SEARCH */}
+              <input
+                value={search}
+                onChange={(e) => setSearch(e.target.value)}
+                placeholder="🔍 Tìm theo tên hoặc MSSV..."
+                className="flex-1 px-3 py-2 border rounded-xl text-sm font-bold focus:border-sky-500 outline-none"
+              />
+
+            </div>
             <div className="bg-gray-50 p-4 border-b-2 border-gray-100 flex justify-between">
               <span className="text-gray-500 font-bold text-sm">Sĩ số hiện tại: <span className="text-sky-500 text-lg">{students.length}</span></span>
             </div>
             <div className="p-4 space-y-3">
-              {students.map((student) => (
+              {filteredStudents.map((student) => (
                 <div key={student.student_id} className="bg-white rounded-2xl p-4 border-2 border-gray-100 flex items-center justify-between hover:border-sky-300 hover:bg-sky-50/50 transition-colors group">
                   <div className="flex items-center gap-4">
                     <div className="w-12 h-12 bg-gray-100 rounded-full overflow-hidden flex items-center justify-center text-xl border-2 border-white shadow-sm">

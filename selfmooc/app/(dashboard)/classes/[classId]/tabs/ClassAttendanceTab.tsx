@@ -10,6 +10,8 @@ export default function ClassAttendanceTab({ classId }: { classId: number }) {
   const [isSaving, setIsSaving] = useState(false);
   const [expandedDate, setExpandedDate] = useState<string | null>(null);
 
+  const [search, setSearch] = useState('');
+
   const loadData = async () => {
     setIsLoading(true);
     const [todayRes, historyRes] = await Promise.all([
@@ -24,13 +26,13 @@ export default function ClassAttendanceTab({ classId }: { classId: number }) {
   useEffect(() => { loadData(); }, [classId]);
 
   const handleToggleLocalAttendance = (studentId: number, currentStatus: string) => {
-    setAttendanceList(prev => prev.map(item => 
-      item.student_id === studentId 
-        ? { 
-            ...item, 
-            today_status: currentStatus === 'present' ? 'absent' : 'present',
-            total_absences: currentStatus === 'present' ? Number(item.total_absences) + 1 : Number(item.total_absences) - 1 
-          } 
+    setAttendanceList(prev => prev.map(item =>
+      item.student_id === studentId
+        ? {
+          ...item,
+          today_status: currentStatus === 'present' ? 'absent' : 'present',
+          total_absences: currentStatus === 'present' ? Number(item.total_absences) + 1 : Number(item.total_absences) - 1
+        }
         : item
     ));
   };
@@ -47,24 +49,63 @@ export default function ClassAttendanceTab({ classId }: { classId: number }) {
     setIsSaving(false);
   };
 
+  const filteredAttendanceList = attendanceList.filter((s) => {
+    const keyword = search.toLowerCase();
+    return (
+      s.name?.toLowerCase().includes(keyword) ||
+      s.student_code?.toLowerCase().includes(keyword)
+    );
+  });
+
   return (
     <div className="space-y-8 animate-fade-in">
       {/* BẢNG ĐIỂM DANH HÔM NAY */}
       <div className="bg-white rounded-3xl border-2 border-gray-100 overflow-hidden shadow-sm">
-        <div className="p-6 border-b-2 border-gray-100 bg-gray-50 flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+        <div className="p-6 border-b-2 border-gray-100 bg-gray-50 flex flex-col md:flex-row justify-between items-start md:items-center gap-6">
+
+          {/* LEFT */}
           <div>
-            <h2 className="text-xl font-bold text-gray-800 flex items-center gap-2"><span>📅</span> Chốt Điểm Danh Hôm Nay</h2>
-            <p className="text-sm text-gray-500 mt-1 font-medium">Ngày: {new Date().toLocaleDateString('vi-VN')} • Tích vào những bạn đi học</p>
+            <h2 className="text-xl font-bold text-gray-800 flex items-center gap-2">
+              <span>📅</span> Chốt Điểm Danh Hôm Nay
+            </h2>
+            <p className="text-sm text-gray-500 mt-1 font-medium">
+              Ngày: {new Date().toLocaleDateString('vi-VN')} • Tích vào những bạn đi học
+            </p>
           </div>
-          
-          <div className="flex items-center gap-6">
+
+          {/* RIGHT */}
+          <div className="flex items-center gap-4 flex-wrap justify-end">
+
+            {/* LEGEND */}
             <div className="flex gap-4 text-sm font-bold">
-              <span className="flex items-center gap-2 text-sky-600"><div className="w-4 h-4 rounded bg-sky-100 border border-sky-300 flex items-center justify-center text-xs">✓</div> Có mặt</span>
-              <span className="flex items-center gap-2 text-rose-500"><div className="w-4 h-4 rounded bg-rose-50 border border-rose-300"></div> Vắng mặt</span>
+              <span className="flex items-center gap-2 text-sky-600">
+                <div className="w-4 h-4 rounded bg-sky-100 border border-sky-300 flex items-center justify-center text-xs">✓</div>
+                Có mặt
+              </span>
+
+              <span className="flex items-center gap-2 text-rose-500">
+                <div className="w-4 h-4 rounded bg-rose-50 border border-rose-300"></div>
+                Vắng mặt
+              </span>
             </div>
-            <button onClick={handleSaveSubmit} disabled={isSaving || attendanceList.length === 0} className="px-6 py-3 bg-emerald-500 text-white font-bold rounded-xl hover:bg-emerald-400 transition-colors shadow-[0_4px_0_rgb(5,150,105)] disabled:opacity-50 active:translate-y-[2px] active:shadow-none">
+
+            {/* BUTTON */}
+            <button
+              onClick={handleSaveSubmit}
+              disabled={isSaving || attendanceList.length === 0}
+              className="px-6 py-3 bg-emerald-500 text-white font-bold rounded-xl hover:bg-emerald-400 transition-colors shadow-[0_4px_0_rgb(5,150,105)] disabled:opacity-50 active:translate-y-[2px] active:shadow-none"
+            >
               {isSaving ? '⏳ ĐANG LƯU...' : '💾 LƯU ĐIỂM DANH'}
             </button>
+
+            {/* SEARCH (góc phải) */}
+            <input
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              placeholder="🔍 Tìm tên hoặc MSSV..."
+              className="w-[260px] md:w-[320px] lg:w-[380px] px-4 py-2 border rounded-xl text-sm font-bold focus:border-sky-500 outline-none bg-white"
+            />
+
           </div>
         </div>
 
@@ -85,7 +126,7 @@ export default function ClassAttendanceTab({ classId }: { classId: number }) {
                 </tr>
               </thead>
               <tbody className="divide-y divide-gray-50">
-                {attendanceList.map((student, idx) => (
+                {filteredAttendanceList.map((student, idx) => (
                   <tr key={student.student_id} className="hover:bg-gray-50 transition-colors">
                     <td className="p-4 text-center text-gray-400 font-bold">{idx + 1}</td>
                     <td className="p-4 font-bold text-gray-800">{student.name}</td>
@@ -111,9 +152,9 @@ export default function ClassAttendanceTab({ classId }: { classId: number }) {
       {/* LỊCH SỬ ĐIỂM DANH */}
       <div className="bg-white rounded-3xl border-2 border-gray-100 overflow-hidden shadow-sm">
         <div className="p-6 border-b-2 border-gray-100 bg-gray-50">
-           <h2 className="text-xl font-bold text-gray-800 flex items-center gap-2"><span>📜</span> Lịch Sử Điểm Danh Theo Ngày</h2>
+          <h2 className="text-xl font-bold text-gray-800 flex items-center gap-2"><span>📜</span> Lịch Sử Điểm Danh Theo Ngày</h2>
         </div>
-        
+
         {attendanceHistory.length === 0 ? (
           <div className="text-center py-10 text-gray-400 font-bold">Chưa có bản ghi lịch sử nào.</div>
         ) : (
@@ -148,7 +189,7 @@ export default function ClassAttendanceTab({ classId }: { classId: number }) {
                             <td className="py-3 font-bold text-gray-800">{hist.name}</td>
                             <td className="py-3 text-sm font-mono font-bold text-purple-500">{hist.student_code}</td>
                             <td className="py-3 text-center">
-                              {hist.status === 'present' 
+                              {hist.status === 'present'
                                 ? <span className="px-3 py-1 text-xs font-bold bg-sky-50 text-sky-600 rounded-lg border border-sky-200">Có mặt</span>
                                 : <span className="px-3 py-1 text-xs font-bold bg-rose-50 text-rose-600 rounded-lg border border-rose-200">Vắng mặt</span>
                               }

@@ -50,7 +50,7 @@ export default function CourseDetailPage() {
   // ==========================================
   const loadAllData = async () => {
     setIsLoading(true);
-    // Gọi song song 2 API cho nhanh
+
     const [docsRes, questsRes] = await Promise.all([
       getCourseDocsAction(courseId),
       getCourseQuestionsAction(courseId)
@@ -58,9 +58,12 @@ export default function CourseDetailPage() {
 
     if (docsRes.success) {
       setDocuments(docsRes.data);
-      setFilteredDocuments(docsRes.data);
     }
-    if (questsRes.success) setQuestions(questsRes.data);
+
+    if (questsRes.success) {
+      setQuestions(questsRes.data);
+    }
+
     setIsLoading(false);
   };
 
@@ -195,15 +198,18 @@ export default function CourseDetailPage() {
     }
   };
 
-  //Search
   const [searchDoc, setSearchDoc] = useState('');
-  const [filteredDocuments, setFilteredDocuments] = useState<any[]>([]);
-  useEffect(() => {
-    const filtered = documents.filter(doc =>
-      doc.title?.toLowerCase().includes(searchDoc.toLowerCase())
-    );
-    setFilteredDocuments(filtered);
-  }, [searchDoc, documents]);
+  const [searchQuestion, setSearchQuestion] = useState('');
+
+  // filtered documents
+  const filteredDocuments = documents.filter(doc =>
+    doc.title?.toLowerCase().includes(searchDoc.toLowerCase())
+  );
+
+  // filtered questions
+  const filteredQuestions = questions.filter(q =>
+    (q.content?.text || '').toLowerCase().includes(searchQuestion.toLowerCase())
+  );
 
 
   return (
@@ -306,7 +312,14 @@ export default function CourseDetailPage() {
             </div>
           </div>
 
-          <div className="lg:col-span-2">
+          <div className="lg:col-span-2 bg-white rounded-3xl border-2 border-gray-100 shadow-sm p-6 space-y-4">
+            {/* SEARCH RIÊNG DOCUMENT */}
+            <input
+              value={searchDoc}
+              onChange={(e) => setSearchDoc(e.target.value)}
+              placeholder="🔍 Tìm tài liệu..."
+              className="w-full px-4 py-3 border-2 border-gray-200 rounded-2xl font-bold"
+            />
             {isLoading ? (
               <div className="text-center py-10 font-bold text-gray-400">Đang lấy dữ liệu...</div>
             ) : documents.length === 0 ? (
@@ -488,7 +501,15 @@ export default function CourseDetailPage() {
           </div>
 
           {/* CỘT PHẢI: DANH SÁCH CÂU HỎI */}
-          <div className="lg:col-span-2">
+          <div className="lg:col-span-2 bg-white rounded-3xl border-2 border-gray-100 shadow-sm p-6 space-y-4">
+
+            {/* SEARCH RIÊNG QUESTION */}
+            <input
+              value={searchQuestion}
+              onChange={(e) => setSearchQuestion(e.target.value)}
+              placeholder="🔍 Tìm câu hỏi..."
+              className="w-full px-4 py-3 border-2 border-gray-200 rounded-2xl font-bold"
+            />
             {isLoading ? (
               <div className="text-center py-10 font-bold text-gray-400">Đang lấy dữ liệu ngân hàng...</div>
             ) : questions.length === 0 ? (
@@ -498,7 +519,7 @@ export default function CourseDetailPage() {
               </div>
             ) : (
               <div className="space-y-4">
-                {questions.map((q, idx) => (
+                {filteredQuestions.map((q, idx) => (
                   <div key={q.question_id} className="bg-white p-5 rounded-2xl border-2 border-gray-100 hover:border-purple-300 transition-colors group relative">
 
                     {/* Badge loại câu hỏi */}

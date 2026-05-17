@@ -14,6 +14,9 @@ export default function ClassQuizzesTab({ classId }: { classId: number }) {
   const [message, setMessage] = useState('');
   const [isLoading, setIsLoading] = useState(true);
 
+  const [assignmentSearch, setAssignmentSearch] = useState('');
+  const [questionSearch, setQuestionSearch] = useState('');
+
   const loadAssignments = async () => {
     setIsLoading(true);
     const res = await getClassAssignmentsAction(classId);
@@ -28,7 +31,7 @@ export default function ClassQuizzesTab({ classId }: { classId: number }) {
   const handleOpenQuizModal = async () => {
     setIsQuizModalOpen(true);
     setEditingAssignment(null);
-    setSelectedQIds([]); 
+    setSelectedQIds([]);
     const courseRes = await getCourseIdOfClassAction(classId);
     if (courseRes.success && courseRes.courseId) {
       const qRes = await getCourseQuestionsAction(courseRes.courseId);
@@ -81,13 +84,34 @@ export default function ClassQuizzesTab({ classId }: { classId: number }) {
     }
   };
 
+  const filteredAssignments = assignments.filter(a =>
+    a.title?.toLowerCase().includes(assignmentSearch.toLowerCase()) ||
+    a.assignment_type?.toLowerCase().includes(assignmentSearch.toLowerCase())
+  );
+
+  const filteredQuestions = courseQuestions.filter(q =>
+    q.content?.text?.toLowerCase().includes(questionSearch.toLowerCase()) ||
+    String(q.chapter || '').includes(questionSearch)
+  );
+
   return (
     <div className="animate-fade-in">
-      <div className="flex justify-between items-center mb-6">
+      <div className="flex justify-between items-center mb-4">
         <h2 className="text-2xl font-bold text-gray-800 flex items-center gap-2"><span>📝</span> Bài Tập Giao Cho Lớp</h2>
+        <div className="mb-6">
+        </div>
         <button onClick={handleOpenQuizModal} className="px-6 py-3 bg-amber-500 text-white font-bold rounded-2xl hover:bg-amber-600 transition-all shadow-[0_4px_0_rgb(217,119,6)] active:translate-y-[2px] active:shadow-none">
           ➕ Soạn Bài Tập Mới
         </button>
+      </div>
+
+      <div className="mb-6 flex justify-start">
+        <input
+          value={assignmentSearch}
+          onChange={(e) => setAssignmentSearch(e.target.value)}
+          placeholder="🔍 Tìm bài tập theo tiêu đề ..."
+          className="w-full md:w-[420px] px-4 py-3 border-2 border-gray-200 rounded-2xl font-bold text-gray-700 focus:border-amber-400 outline-none shadow-sm"
+        />
       </div>
 
       {isLoading ? (
@@ -98,8 +122,8 @@ export default function ClassQuizzesTab({ classId }: { classId: number }) {
           <h3 className="text-xl font-bold text-gray-400 mb-2">Chưa có bài tập nào được giao</h3>
         </div>
       ) : (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {assignments.map((ass) => (
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mt-1">
+          {filteredAssignments.map((ass) => (
             <div key={ass.assignment_id} className="bg-white rounded-3xl p-6 border-2 border-gray-100 hover:border-amber-300 shadow-sm transition-colors group relative">
               <button onClick={() => handleEditAssignment(ass)} className="absolute top-4 right-4 w-10 h-10 bg-gray-100 rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity hover:bg-amber-500 hover:text-white font-bold" title="Sửa bài tập">
                 ✏️
@@ -133,9 +157,9 @@ export default function ClassQuizzesTab({ classId }: { classId: number }) {
               </h2>
               <button onClick={() => { setIsQuizModalOpen(false); setEditingAssignment(null); setMessage(''); }} className="text-white hover:rotate-90 transition-transform text-2xl font-bold">✖</button>
             </div>
-            
+
             <form onSubmit={handleSubmitQuizForm} className="flex-1 overflow-hidden flex flex-col lg:flex-row">
-              
+
               {/* CỘT TRÁI: Cài đặt thông số */}
               <div className="w-full lg:w-1/3 p-6 border-r border-gray-200 overflow-y-auto bg-gray-50">
                 <div className="space-y-5">
@@ -158,7 +182,7 @@ export default function ClassQuizzesTab({ classId }: { classId: number }) {
                       <input name="time_limit_min" defaultValue={editingAssignment?.time_limit_min} type="number" placeholder="Vô hạn" className="w-full px-4 py-3 bg-white border-2 border-gray-200 rounded-xl text-gray-800 font-bold outline-none focus:border-amber-500" />
                     </div>
                   </div>
-                  
+
                   <div className="grid grid-cols-2 gap-4">
                     <div>
                       <label className="block text-sm font-bold text-gray-700 mb-2">Lần làm tối đa</label>
@@ -174,13 +198,13 @@ export default function ClassQuizzesTab({ classId }: { classId: number }) {
                     <label className="block text-sm font-bold text-gray-700 mb-2">Lời dặn dò</label>
                     <textarea name="description" defaultValue={editingAssignment?.description} rows={3} placeholder="Chú ý làm bài cẩn thận nhé..." className="w-full px-4 py-3 bg-white border-2 border-gray-200 rounded-xl text-gray-800 font-medium outline-none resize-none focus:border-amber-500"></textarea>
                   </div>
-                  
+
                   {message && (
                     <div className={`p-3 rounded-xl text-sm font-bold text-center ${message.includes('✅') ? 'bg-emerald-50 text-emerald-600 border border-emerald-200' : 'bg-rose-50 text-rose-600 border border-rose-200'}`}>
                       {message}
                     </div>
                   )}
-                  
+
                   <button type="submit" disabled={isSubmittingQuiz} className="w-full py-4 mt-2 bg-amber-500 text-white font-bold rounded-xl hover:bg-amber-400 transition-colors shadow-[0_4px_0_rgb(217,119,6)] active:translate-y-1 active:shadow-none disabled:opacity-50 disabled:shadow-none">
                     {isSubmittingQuiz ? '⏳ ĐANG LƯU...' : (editingAssignment ? `💾 LƯU THAY ĐỔI (${selectedQIds.length} Câu)` : `🚀 GIAO BÀI (${selectedQIds.length} Câu)`)}
                   </button>
@@ -196,17 +220,24 @@ export default function ClassQuizzesTab({ classId }: { classId: number }) {
                   </span>
                 </div>
 
+                <input
+                  value={questionSearch}
+                  onChange={(e) => setQuestionSearch(e.target.value)}
+                  placeholder="🔍 Tìm câu hỏi..."
+                  className="w-full px-4 py-3 mb-4 border-2 border-gray-200 rounded-xl font-bold text-gray-700 focus:border-amber-400 outline-none"
+                />
+
                 {courseQuestions.length === 0 ? (
                   <div className="text-center py-20 text-gray-400 font-bold border-2 border-dashed border-gray-200 rounded-3xl">
-                    Chưa có câu hỏi nào trong Khóa học này.<br/>Hãy sang mục Khóa Học để soạn đề trước nhé!
+                    Chưa có câu hỏi nào trong Khóa học này.<br />Hãy sang mục Khóa Học để soạn đề trước nhé!
                   </div>
                 ) : (
                   <div className="space-y-4">
-                    {courseQuestions.map((q) => (
+                    {filteredQuestions.map((q) => (
                       <label key={q.question_id} className={`flex items-start gap-4 p-4 rounded-2xl border-2 cursor-pointer transition-all ${selectedQIds.includes(q.question_id) ? 'bg-amber-50 border-amber-400 shadow-sm' : 'bg-white border-gray-200 hover:border-amber-300'}`}>
                         <div className="pt-1">
-                          <input 
-                            type="checkbox" 
+                          <input
+                            type="checkbox"
                             className="w-6 h-6 accent-amber-500 cursor-pointer"
                             checked={selectedQIds.includes(q.question_id)}
                             onChange={() => handleToggleQuestion(q.question_id)}
