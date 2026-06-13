@@ -310,7 +310,7 @@ CREATE TABLE attendance (
 
 -- Auth lookups
 CREATE INDEX idx_student_email  ON student(email);
-CREATE INDEX idx_teacher_email  ON teacher(email);
+CREATE INDEX idx_student_code ON student(student_code);
 
 -- Class queries
 CREATE INDEX idx_class_course   ON class(course_id);
