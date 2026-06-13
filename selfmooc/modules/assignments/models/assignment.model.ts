@@ -7,13 +7,13 @@ export async function createAssignmentDB(data: any, questionIds: number[]) {
 
     // 1. Tạo vỏ Bài Tập
     const insertAssignmentQuery = `
-      INSERT INTO assignment (class_id, created_by, title, description, assignment_type, due_date, time_limit_min, total_points, is_published)
-      VALUES ($1, $2, $3, $4, $5, $6, $7, $8, true)
+      INSERT INTO assignment (class_id, created_by, title, description, assignment_type, due_date, time_limit_min, total_points, max_attempts, is_published)
+      VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, true)
       RETURNING assignment_id
     `;
     const assignmentValues = [
       data.class_id, data.teacher_id, data.title, data.description, 
-      data.assignment_type, data.due_date, data.time_limit_min, questionIds.length // Tạm tính mỗi câu 1 điểm
+      data.assignment_type, data.due_date, data.time_limit_min, questionIds.length * 10, data.max_attempts
     ];
     const res = await client.query(insertAssignmentQuery, assignmentValues);
     const assignmentId = res.rows[0].assignment_id;
@@ -25,7 +25,7 @@ export async function createAssignmentDB(data: any, questionIds: number[]) {
         VALUES ($1, $2, $3, $4)
       `;
       for (let i = 0; i < questionIds.length; i++) {
-        await client.query(insertAQQuery, [assignmentId, questionIds[i], i + 1, 1]);
+        await client.query(insertAQQuery, [assignmentId, questionIds[i], i + 1, 10]);
       }
     }
 

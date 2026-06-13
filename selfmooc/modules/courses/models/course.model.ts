@@ -144,7 +144,7 @@ export async function getStudentClassGradesDB(studentId: number, classId: number
   const client = await pgPool.connect();
   try {
     const query = `
-      SELECT a.title, a.assignment_type, s.grade, s.status, s.submitted_at
+      SELECT a.title, a.assignment_type, s.submission_id, s.grade, s.status, s.submitted_at
       FROM assignment a
       LEFT JOIN submission s ON a.assignment_id = s.assignment_id AND s.student_id = $1
       WHERE a.class_id = $2

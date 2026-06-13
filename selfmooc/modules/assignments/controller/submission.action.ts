@@ -21,6 +21,18 @@ export async function submitAssignmentAction(assignmentId: number, studentAnswer
 
   const client = await pgPool.connect();
   try {
+    // 0. Kiểm tra số lượt làm bài tối đa
+    const assRes = await client.query('SELECT max_attempts FROM assignment WHERE assignment_id = $1', [assignmentId]);
+    if (assRes.rows.length === 0) return { success: false, message: 'Không tìm thấy bài tập' };
+    const maxAttempts = assRes.rows[0].max_attempts;
+    if (maxAttempts) {
+      const attemptsRes = await client.query('SELECT COUNT(*) FROM submission WHERE assignment_id = $1 AND student_id = $2', [assignmentId, user.id]);
+      const attempts = parseInt(attemptsRes.rows[0].count);
+      if (attempts >= maxAttempts) {
+        return { success: false, message: '⚠️ Bạn đã hết số lần làm bài cho phép!' };
+      }
+    }
+
     // 1. Lấy danh sách câu hỏi của bài tập này để chấm điểm
     const qRes = await client.query(`
       SELECT q.question_id, q.question_type, q.mongo_id, aq.points
@@ -134,6 +146,105 @@ export async function getMySubmissionsAction() {
   } catch (error) {
     console.error(error);
     return { success: false, data: [] };
+  } finally {
+    client.release();
+  }
+}
+
+// LẤY CHI TIẾT BÀI LÀM CỦA HỌC SINH (KÈM CÂU HỎI VÀ ĐÁP ÁN ĐÚNG)
+export async function getSubmissionDetailsForStudentAction(submissionId: number) {
+  const cookieStore = await cookies();
+  const token = cookieStore.get('session')?.value;
+  const user = token ? getUserFromToken(token) : null;
+  
+  if (!user || (user.role !== 'student' && user.role !== 'parent')) {
+    return { success: false, message: 'Chưa đăng nhập hoặc không có quyền' };
+  }
+
+  const client = await pgPool.connect();
+  try {
+    // 1. Lấy thông tin submission & assignment
+    const subRes = await client.query(`
+      SELECT s.submission_id, s.assignment_id, s.student_id, s.status, s.grade, s.score, s.max_score, s.submitted_at,
+             a.title, a.assignment_type
+      FROM submission s
+      JOIN assignment a ON s.assignment_id = a.assignment_id
+      WHERE s.submission_id = $1
+    `, [submissionId]);
+
+    if (subRes.rows.length === 0) {
+      return { success: false, message: 'Không tìm thấy bài làm' };
+    }
+
+    const submission = subRes.rows[0];
+
+    // Xác thực quyền truy cập
+    if (user.role === 'student' && submission.student_id !== user.id) {
+      return { success: false, message: 'Bạn không có quyền xem bài làm này' };
+    }
+
+    if (user.role === 'parent') {
+      const relRes = await client.query(
+        'SELECT 1 FROM parent_student WHERE parent_id = $1 AND student_id = $2',
+        [user.id, submission.student_id]
+      );
+      if (relRes.rows.length === 0) {
+        return { success: false, message: 'Bạn không có quyền xem bài làm của học sinh này' };
+      }
+    }
+
+    // 2. Lấy validation trong MongoDB
+    const db = await getMongoDb();
+    const validation = await db.collection('validation').findOne({ pg_submission_id: submissionId });
+    if (!validation) {
+      return { success: false, message: 'Không tìm thấy chi tiết bài làm' };
+    }
+
+    // 3. Lấy thông tin các câu hỏi của assignment này từ Postgres + MongoDB
+    const qRes = await client.query(`
+      SELECT q.question_id, q.question_type, q.mongo_id, aq.points, aq.display_order
+      FROM assignment_question aq
+      JOIN question q ON aq.question_id = q.question_id
+      WHERE aq.assignment_id = $1
+      ORDER BY aq.display_order ASC
+    `, [submission.assignment_id]);
+
+    const pgQuestions = qRes.rows;
+    if (pgQuestions.length === 0) {
+      return { success: true, data: { submission, questions: [] } };
+    }
+
+    const mongoIds = pgQuestions.map(q => new ObjectId(q.mongo_id));
+    const mongoQuestions = await db.collection('question_content').find({ _id: { $in: mongoIds } }).toArray();
+
+    // Map chi tiết câu hỏi
+    const detailQuestions = pgQuestions.map(pgQ => {
+      const qContent = mongoQuestions.find(m => m._id.toString() === pgQ.mongo_id);
+      const studentAns = validation.answers.find((ans: any) => ans.pg_question_id === pgQ.question_id);
+
+      return {
+        question_id: pgQ.question_id,
+        question_type: pgQ.question_type,
+        points: pgQ.points,
+        text: qContent?.text || '',
+        media: qContent?.media || [],
+        options: qContent?.options || [], // Có chứa is_correct
+        correct_answer: qContent?.correct_answer,
+        sample_answer: qContent?.sample_answer,
+        student_answer: studentAns || null
+      };
+    }).filter(q => q !== null);
+
+    return {
+      success: true,
+      data: {
+        submission,
+        questions: detailQuestions
+      }
+    };
+  } catch (error) {
+    console.error(error);
+    return { success: false, message: 'Lỗi hệ thống khi tải chi tiết bài làm' };
   } finally {
     client.release();
   }

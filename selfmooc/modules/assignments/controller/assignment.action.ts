@@ -69,7 +69,33 @@ export async function createAssignmentAction(formData: FormData, selectedQuestio
 
     if (!payload.title) return { success: false, message: 'Vui lòng nhập tên bài tập!' };
 
-    await createAssignmentDB(payload, selectedQuestionIds);
+    const assignmentId = await createAssignmentDB(payload, selectedQuestionIds);
+
+    // 🚀 BẮN THÔNG BÁO CHO TẤT CẢ HỌC SINH TRONG LỚP
+    const client = await pgPool.connect();
+    try {
+      const studentRes = await client.query("SELECT student_id FROM enrollment WHERE class_id = $1 AND status = 'active'", [payload.class_id]);
+      const studentIds = studentRes.rows.map(r => r.student_id);
+
+      if (studentIds.length > 0) {
+        const db = await getMongoDb();
+        const notifications = studentIds.map(studentId => ({
+          recipient_id: studentId,
+          recipient_type: 'student',
+          type: 'assignment_created',
+          title: 'Bài tập mới đã được giao!',
+          body: `Thầy/Cô đã giao bài tập mới: "${payload.title}". Hãy vào hoàn thành trước khi hết hạn nhé!`,
+          is_read: false,
+          created_at: new Date()
+        }));
+        await db.collection('notification').insertMany(notifications);
+      }
+    } catch (notifErr) {
+      console.error('Lỗi khi bắn thông báo bài tập mới:', notifErr);
+    } finally {
+      client.release();
+    }
+
     return { success: true, message: '✅ Đã giao bài tập thành công cho toàn bộ lớp!' };
   } catch (error: any) {
     return { success: false, message: 'Lỗi khi giao bài: ' + error.message };
@@ -175,12 +201,12 @@ export async function updateAssignmentAction(assignmentId: number, formData: For
 
     await client.query(`
       UPDATE assignment 
-      SET title = $1, description = $2, assignment_type = $3, time_limit_min = $4, due_date = $5, max_attempts = $6
-      WHERE assignment_id = $7 AND created_by = $8
+      SET title = $1, description = $2, assignment_type = $3, time_limit_min = $4, due_date = $5, max_attempts = $6, total_points = $7
+      WHERE assignment_id = $8 AND created_by = $9
     `, [
       formData.get('title'), formData.get('description'), formData.get('assignment_type'),
       Number(formData.get('time_limit_min')) || null, dueDateStr ? new Date(dueDateStr) : null,
-      maxAttempts, assignmentId, user.id
+      maxAttempts, selectedQuestionIds.length * 10, assignmentId, user.id
     ]);
 
     await client.query('DELETE FROM assignment_question WHERE assignment_id = $1', [assignmentId]);
@@ -189,7 +215,7 @@ export async function updateAssignmentAction(assignmentId: number, formData: For
       await client.query(`
         INSERT INTO assignment_question (assignment_id, question_id, points, display_order) 
         VALUES ($1, $2, $3, $4)
-      `, [assignmentId, selectedQuestionIds[i], 1, i + 1]); 
+      `, [assignmentId, selectedQuestionIds[i], 10, i + 1]); 
     }
 
     await client.query('COMMIT');
