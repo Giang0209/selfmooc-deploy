@@ -107,6 +107,31 @@ export async function submitAssignmentAction(assignmentId: number, studentAnswer
       total_time_sec: timeSpentSec
     });
 
+    // 6. 🚀 BẮN THÔNG BÁO CHO GIÁO VIÊN VỀ BÀI NỘP MỚI
+    try {
+      const assTeacherRes = await client.query('SELECT created_by, title FROM assignment WHERE assignment_id = $1', [assignmentId]);
+      if (assTeacherRes.rows.length > 0) {
+        const teacherId = assTeacherRes.rows[0].created_by;
+        const assignmentTitle = assTeacherRes.rows[0].title;
+        
+        // Tìm tên học sinh
+        const studentInfoRes = await client.query('SELECT name FROM student WHERE student_id = $1', [user.id]);
+        const studentName = studentInfoRes.rows[0]?.name || 'Học sinh';
+
+        await db.collection('notification').insertOne({
+          recipient_id: teacherId,
+          recipient_type: 'teacher',
+          type: 'submission_created',
+          title: 'Có bài nộp mới!',
+          body: `Học sinh "${studentName}" đã nộp bài: "${assignmentTitle}".`,
+          is_read: false,
+          created_at: new Date()
+        });
+      }
+    } catch (notifErr) {
+      console.error('Lỗi khi bắn thông báo bài nộp cho giáo viên:', notifErr);
+    }
+
     return { 
       success: true, 
       message: '🎉 Nộp bài thành công!', 
@@ -157,7 +182,7 @@ export async function getSubmissionDetailsForStudentAction(submissionId: number)
   const token = cookieStore.get('session')?.value;
   const user = token ? getUserFromToken(token) : null;
   
-  if (!user || (user.role !== 'student' && user.role !== 'parent')) {
+  if (!user || (user.role !== 'student' && user.role !== 'parent' && user.role !== 'teacher')) {
     return { success: false, message: 'Chưa đăng nhập hoặc không có quyền' };
   }
 
@@ -166,7 +191,7 @@ export async function getSubmissionDetailsForStudentAction(submissionId: number)
     // 1. Lấy thông tin submission & assignment
     const subRes = await client.query(`
       SELECT s.submission_id, s.assignment_id, s.student_id, s.status, s.grade, s.score, s.max_score, s.submitted_at,
-             a.title, a.assignment_type
+             a.title, a.assignment_type, a.created_by
       FROM submission s
       JOIN assignment a ON s.assignment_id = a.assignment_id
       WHERE s.submission_id = $1
@@ -191,6 +216,10 @@ export async function getSubmissionDetailsForStudentAction(submissionId: number)
       if (relRes.rows.length === 0) {
         return { success: false, message: 'Bạn không có quyền xem bài làm của học sinh này' };
       }
+    }
+
+    if (user.role === 'teacher' && submission.created_by !== user.id) {
+      return { success: false, message: 'Bạn không có quyền xem bài làm này' };
     }
 
     // 2. Lấy validation trong MongoDB
@@ -274,6 +303,41 @@ export async function getPendingSubmissionsAction() {
   } catch (error) {
     console.error(error);
     return { success: false, data: [] };
+  } finally {
+    client.release();
+  }
+}
+
+// LẤY DANH SÁCH BÀI LÀM CỦA HỌC SINH CHO MỘT BÀI TẬP (DÀNH CHO GIÁO VIÊN)
+export async function getAssignmentSubmissionsAction(assignmentId: number) {
+  const cookieStore = await cookies();
+  const token = cookieStore.get('session')?.value;
+  const user = token ? getUserFromToken(token) : null;
+  
+  if (!user || user.role !== 'teacher') return { success: false, message: 'Chưa đăng nhập hoặc không có quyền' };
+
+  const client = await pgPool.connect();
+  try {
+    // 1. Kiểm tra xem giáo viên có sở hữu bài tập này không
+    const assRes = await client.query('SELECT 1 FROM assignment WHERE assignment_id = $1 AND created_by = $2', [assignmentId, user.id]);
+    if (assRes.rows.length === 0) {
+      return { success: false, message: 'Không tìm thấy bài tập hoặc bạn không có quyền xem' };
+    }
+
+    // 2. Query danh sách submissions kèm thông tin học sinh
+    const query = `
+      SELECT s.submission_id, s.student_id, s.attempt_number, s.score, s.max_score, s.grade, s.status, s.submitted_at,
+             st.name AS student_name, st.student_code, st.avatar_url AS student_avatar
+      FROM submission s
+      JOIN student st ON s.student_id = st.student_id
+      WHERE s.assignment_id = $1
+      ORDER BY s.submitted_at DESC
+    `;
+    const res = await client.query(query, [assignmentId]);
+    return { success: true, data: res.rows };
+  } catch (error) {
+    console.error(error);
+    return { success: false, message: 'Lỗi hệ thống khi tải danh sách bài nộp' };
   } finally {
     client.release();
   }

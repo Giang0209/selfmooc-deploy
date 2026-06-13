@@ -188,12 +188,15 @@ export default function StudentDiaryPage() {
                               let optionStyle = 'bg-gray-50 border-gray-200 text-gray-600';
                               let badge = null;
 
-                              if (isCorrect) {
+                              if (isCorrect && isSelected) {
                                 optionStyle = 'bg-emerald-50 border-emerald-500 text-emerald-700 font-bold';
+                                badge = <span className="text-emerald-600 font-black text-xs ml-auto">✅ Bạn chọn đúng!</span>;
+                              } else if (isCorrect && !isSelected) {
+                                optionStyle = 'bg-emerald-50 border-emerald-400 text-emerald-700 font-bold';
                                 badge = <span className="text-emerald-600 font-black text-xs ml-auto">✅ Đáp án đúng</span>;
-                              } else if (isSelected) {
+                              } else if (isSelected && !isCorrect) {
                                 optionStyle = 'bg-rose-50 border-rose-500 text-rose-700 font-bold';
-                                badge = <span className="text-rose-600 font-black text-xs ml-auto">❌ Bạn chọn sai</span>;
+                                badge = <span className="text-rose-600 font-black text-xs ml-auto">❌ Bạn đã chọn</span>;
                               }
 
                               return (
@@ -222,12 +225,15 @@ export default function StudentDiaryPage() {
                               let btnStyle = 'bg-gray-50 border-gray-200 text-gray-500';
                               let badge = '';
 
-                              if (isCorrect) {
+                              if (isCorrect && isSelected) {
                                 btnStyle = 'bg-emerald-50 border-emerald-500 text-emerald-600 font-bold';
-                                badge = ' ✅ (Đáp án đúng)';
-                              } else if (isSelected) {
+                                badge = ' ✅ Bạn chọn đúng!';
+                              } else if (isCorrect && !isSelected) {
+                                btnStyle = 'bg-emerald-50 border-emerald-400 text-emerald-600 font-bold';
+                                badge = ' ✅ Đáp án đúng';
+                              } else if (isSelected && !isCorrect) {
                                 btnStyle = 'bg-rose-50 border-rose-500 text-rose-600 font-bold';
-                                badge = ' ❌ (Bạn chọn sai)';
+                                badge = ' ❌ Bạn đã chọn';
                               }
 
                               return (

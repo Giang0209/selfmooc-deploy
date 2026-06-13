@@ -12,7 +12,7 @@ export async function getMyNotificationsAction() {
 
   const db = await getMongoDb();
   const notifs = await db.collection('notification')
-    .find({ recipient_id: user.id })
+    .find({ recipient_id: user.id, recipient_type: user.role })
     .sort({ created_at: -1 })
     .limit(10)
     .toArray();

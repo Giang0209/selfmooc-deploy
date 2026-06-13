@@ -30,21 +30,45 @@ export async function createClassAnnouncementService(
 
   // 3. Lấy danh sách học sinh đang active trong lớp
   const studentIds = await getEnrolledStudentsDB(classId);
+  // Lấy danh sách phụ huynh của các học sinh trong lớp
+  const parentIds = await getParentsByClassDB(classId);
 
-  // 4. Chuẩn bị dữ liệu Notification cho từng học sinh
-  const notifications = studentIds.map(studentId => ({
-    recipient_id: studentId,
-    recipient_type: 'student',
-    type: 'class_announcement',
-    title: `Thông báo mới từ lớp học: ${data.title}`,
-    body: data.body.substring(0, 100) + '...', // Trích dẫn 1 đoạn ngắn
-    payload: { announcement_id: announcementId, class_id: classId },
-    channels: {
-      in_app: { sent: true, read_at: null }
-    },
-    is_read: false,
-    created_at: new Date(),
-  }));
+  // 4. Chuẩn bị dữ liệu Notification cho học sinh và phụ huynh
+  const notifications: any[] = [];
+
+  // Thêm thông báo cho học sinh
+  studentIds.forEach(studentId => {
+    notifications.push({
+      recipient_id: studentId,
+      recipient_type: 'student',
+      type: 'class_announcement',
+      title: `Thông báo mới từ lớp học: ${data.title}`,
+      body: data.body.substring(0, 100) + '...', 
+      payload: { announcement_id: announcementId, class_id: classId },
+      channels: {
+        in_app: { sent: true, read_at: null }
+      },
+      is_read: false,
+      created_at: new Date(),
+    });
+  });
+
+  // Thêm thông báo cho phụ huynh tương ứng
+  parentIds.forEach(parentId => {
+    notifications.push({
+      recipient_id: parentId,
+      recipient_type: 'parent',
+      type: 'class_announcement',
+      title: `Cô nhắc nhở lớp của con: ${data.title}`,
+      body: data.body.substring(0, 100) + '...', 
+      payload: { announcement_id: announcementId, class_id: classId },
+      channels: {
+        in_app: { sent: true, read_at: null }
+      },
+      is_read: false,
+      created_at: new Date(),
+    });
+  });
 
   // 5. Gửi Notification hàng loạt
   await createNotificationsMongo(notifications);
